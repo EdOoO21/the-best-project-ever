@@ -1,6 +1,2 @@
 # the-best-project-ever
-the best python project ever
-привет 
-
-
-snljaodiafnaeivulaeiog.j
+в файле фиговое_тз_результат_хз.pdf лежит суперподробное описание проекта
