@@ -7,14 +7,16 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
 import asyncio
 import os
+from dotenv import load_dotenv
 from datetime import datetime
 import logging
 import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+load_dotenv()
 
-TOKEN = '7694466685:AAF28AYYL9LA6BboWipzM51JZVeF0qv0DPM'
+TOKEN = os.getenv('BOT_TOKEN')
 
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
