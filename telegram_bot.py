@@ -362,7 +362,6 @@ async def cb_ticket_first(callback_query: CallbackQuery):
     await bot.send_message(user_id, "Вы выбрали билеты СВ класса.")
     logger.info(f"Пользователю {user_id} подтвержден выбор билетов СВ класса.")
 
-# Обработчики выбора конкретных услуг
 @router.callback_query(F.data == "service_baggage")
 async def cb_service_baggage(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
