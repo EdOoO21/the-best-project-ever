@@ -1,0 +1,6 @@
+requests==2.31.0
+aiogram==3.15.0
+python-dotenv==1.0.0
+asyncio==3.4.3
+pydantic>=2.7.0
+pydantic_settings==2.6.1
