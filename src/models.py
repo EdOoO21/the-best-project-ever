@@ -1,21 +1,22 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, SmallInteger
-from sqlalchemy.orm import relationship, declarative_base, sessionmaker, Session
-from datetime import datetime
+from sqlalchemy import Column, Enum, Integer, String, DateTime, ForeignKey, text
+from sqlalchemy.orm import relationship, DeclarativeBase
+import enum
 
-from database import engine
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
+
 
 class City(Base):
     """модель таблички городов"""
     __tablename__ = "t_city"
+    __table_args__ = {'extend_existing': True}
 
     city_id = Column(Integer, primary_key=True)
-    city_name = Column(String(25), nullable=False)
+    city_name = Column(String(50), nullable=False)
 
     # связь со станциями - станции в этом населенном пункте
     stations = relationship("Station", back_populates="city")
-
 
 class Station(Base):
     """модель таблички станций/вокзалов"""
@@ -38,9 +39,9 @@ class Station(Base):
 class Route(Base):
     """модель таблички маршрутов поездов"""
     __table_args__ = {'extend_existing': True}
-    __tablebname__= "t_route"
+    __tablename__= "t_route"
 
-    route_id = Column(Integer, primary_key=True)
+    route_id = Column(Integer, primary_key=True, autoincrement=True)
     from_station_id = Column(Integer, ForeignKey('t_station.station_id'), nullable=False)
     from_date = Column(DateTime, nullable=False)
     to_station_id = Column(Integer, ForeignKey('t_station.station_id'), nullable=False)
@@ -48,26 +49,29 @@ class Route(Base):
     train_no = Column(String(25))
 
     # связь с станциями - станция отправления
-    from_station = relationship("Company", foreign_keys=[from_station_id], back_populates="from_routes")
+    from_station = relationship("Station", foreign_keys=[from_station_id], back_populates="from_routes")
     # связь с станциями - станция прибытия
-    to_station = relationship("Company", foreign_keys=[to_station_id], back_populates="to_routes")
+    to_station = relationship("Station", foreign_keys=[to_station_id], back_populates="to_routes")
     # cвязь с юзерами - юзеры, которые следят за этим маршрутом
     users = relationship('User', secondary="t_subscription", back_populates='subscriptions')
-    # связь с билетами - все стоимости для этого маршрута, которые когда-либо были 
-    tickets = relationship("Ticket", back_populates="route", foreign_keys="Ticket.ticket_id")
+    # связь с билетами - все стоимости для этого маршрута, которые когда-либо были + сортируем в порядке возрастания стоимости
+    tickets = relationship("Ticket", back_populates="route", foreign_keys="Ticket.route_id", order_by="Ticket.best_price.asc()")
 
+class UserStatus(enum.Enum):
+    banned = "banned"
+    chill = "chill"
 
 class User(Base):
     """таблица пользователей бота"""
     __table_args__ = {'extend_existing': True}
     __tablename__ = "t_user"
 
-    id = Column(Integer, primary_key=True)
-    # статус юзера, пока 0 - обычный, 1 - забаненый
-    status = Column(SmallInteger)
+    user_id = Column(Integer, primary_key=True)
+    # статус юзера
+    status = Column(Enum(UserStatus), nullable=False)
 
     # связь с маршрутами - все подписки пользователя
-    subscriptions = relationship('Route', secondary="t_subscription", back_populates='subscribers')
+    subscriptions = relationship('Route', secondary="t_subscription", back_populates='users')
 
 
 class Subscription(Base):
@@ -78,35 +82,23 @@ class Subscription(Base):
     user_id = Column(Integer, ForeignKey('t_user.user_id'), primary_key=True)
     route_id = Column(Integer, ForeignKey('t_route.route_id'), primary_key=True)
 
+class TicketType(enum.Enum):
+    """я хз как это на английский переводится вот честное слово)))"""
+    plackart = "плацкарт"
+    cupe = "купе"
+    seated = "сидячий"
+    sv = "св"
 
 class Ticket(Base):
-    """табличка со стоимостями билетов для маршрутов"""
+    """табличка со стоимостью билетов для маршрутов"""
     __tablename__ = "t_ticket"
     __table_args__ = {'extend_existing': True}
 
     ticket_id = Column(Integer, primary_key=True)
     route_id = Column(Integer, ForeignKey("t_route.route_id"), nullable=False)
-    class_name = Column(String(10), nullable=False)
+    class_name = Column(Enum(TicketType), nullable=False)
     best_price = Column(Integer, nullable=False, )
-    update_time = Column(DateTime, nullable=False)
+    update_time = Column(DateTime, nullable=False, server_default=text("TIMEZONE('utc', now())")) # постгрес автоматически подставит время получения инфы
 
     # связь с маршрутами - маршут, к которому относится билет 
-    route = relationship("Route", back_populates="tickets", foreign_keys="Route.route_id")
-
-
-#ТЕСТ
-
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-station1 = Station(name='Станция 1')
-station2 = Station(name='Станция 2')
-route1 = Route(departure_station=station1, arrival_station=station2)
-
-session.add(station1)
-session.add(station2)
-session.add(route1)
-session.commit()
-
-
+    route = relationship("Route", back_populates="tickets", foreign_keys="Ticket.route_id")

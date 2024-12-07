@@ -80,7 +80,7 @@ def get_station_code(station_name):
     """
     Получает код города/станции по названию.
     """
-    with open("../docs/city codes.json", 'r') as file:
+    with open("../docs/city_codes.json", 'r') as file:
         file = json.load(file)
         ans = file.get(station_name)
         if ans:
