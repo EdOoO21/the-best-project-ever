@@ -1,12 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-class TelegramSettings(BaseSettings):
-    # вынести настройки бота сюда? мб?
-    BOT_TOKEN: int = ""
-    API_hash: str = ""
-
 class Settings(BaseSettings):
+    BOT_TOKEN: str
     DB_HOST: str
     DB_PORT: int
     DB_USER: str

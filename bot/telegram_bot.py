@@ -1,6 +1,6 @@
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from aiogram.filters import Command, Text
+from aiogram.filters import Command
 from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -12,16 +12,21 @@ from datetime import datetime
 import logging
 import re
 
-from database.queries.users import (
+from src.queries import (
     add_subscription,
-    get_subscriptions,
-    remove_subscription
+    # get_subscriptions,
+    # remove_subscription,
+    add_user,
+    delete_subscription,
+    add_route,
+    add_ticket
 )
+from src.models import TicketType
 from requests.api_requests import (
     get_train_routes_with_session,
     get_station_code
 )
-from update_db import update_db
+from requests.update_db import update as update_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -126,6 +131,7 @@ async def cmd_start(message: types.Message):
 
     if user_id not in registered:
         registered.add(user_id)
+        add_user(user_id)
         welcome_text = (
             f"Добро пожаловать, {message.from_user.first_name}! Вы успешно зарегистрированы.\n"
             "Выберите действие ниже:"
@@ -158,65 +164,56 @@ async def cb_set_alert(callback_query: CallbackQuery, state: FSMContext):
 @router.message(AlertForm.origin)
 async def process_origin(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    logger.info(f"Пользователь {user_id} вводит город отправления: {message.text}")
-
     text = message.text.strip()
+    logger.info(f"Пользователь {user_id} вводит город отправления: {text}")
+
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающий город отправления.")
         return
 
     await state.update_data(origin=text)
     await state.set_state(AlertForm.destination)
     await message.answer("Введите точное наименование города назначения с маленькой буквы:")
-    logger.info(f"Пользователь {user_id} установил город отправления: {text}")
 
 @router.message(AlertForm.destination)
 async def process_destination(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    logger.info(f"Пользователь {user_id} вводит город назначения: {message.text}")
-
     text = message.text.strip()
+    logger.info(f"Пользователь {user_id} вводит город назначения: {text}")
+
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающий город назначения.")
         return
 
     await state.update_data(destination=text)
     await state.set_state(AlertForm.date)
     await message.answer("Введите дату поездки в формате ДД.ММ.ГГГГ:")
-    logger.info(f"Пользователь {user_id} установил город назначения: {text}")
 
 @router.message(AlertForm.date)
 async def process_date(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    logger.info(f"Пользователь {user_id} вводит дату поездки: {message.text}")
-
     text = message.text.strip()
+    logger.info(f"Пользователь {user_id} вводит дату поездки: {text}")
+
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающую дату поездки.")
         return
 
     if not re.match(r'\d{2}\.\d{2}\.\d{4}', text):
         await message.answer("Некорректный формат даты. Пожалуйста, используйте ДД.ММ.ГГГГ:")
-        logger.warning(f"Пользователь {user_id} ввел некорректный формат даты: {text}")
         return
 
     await state.update_data(date=text)
     await state.set_state(AlertForm.class_type)
     await message.answer("Выберите класс билета для оповещения:", reply_markup=ticket_options_keyboard())
-    logger.info(f"Пользователь {user_id} установил дату поездки: {text}")
 
 @router.callback_query(AlertForm.class_type, F.data.in_(['ticket_econom', 'ticket_business', 'ticket_first']))
 async def process_alert_class(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
     class_data = callback_query.data
-    logger.info(f"Пользователь {user_id} выбрал класс билета для оповещения: {class_data}")
 
     if user_id in banned_users:
         await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался использовать бота.")
         return
 
     class_types = {
@@ -229,21 +226,17 @@ async def process_alert_class(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(class_type=class_type)
     await callback_query.answer()
     await bot.send_message(user_id, f"Вы выбрали класс: {class_type}.")
-    logger.info(f"Пользователь {user_id} выбрал класс билета: {class_type}")
 
     await state.set_state(AlertForm.price)
     await bot.send_message(user_id, "Введите максимальную цену билета:")
-    logger.info(f"Пользователь {user_id} переходит к вводу максимальной цены.")
 
 @router.message(AlertForm.price)
 async def process_price(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    logger.info(f"Пользователь {user_id} вводит максимальную цену билета: {message.text}")
-
     text = message.text.strip()
+
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающую цену билета.")
         return
 
     try:
@@ -252,38 +245,63 @@ async def process_price(message: Message, state: FSMContext):
             raise ValueError
     except ValueError:
         await message.answer("Пожалуйста, введите корректную цену (положительное число):")
-        logger.warning(f"Пользователь {user_id} ввел некорректную цену билета: {text}")
         return
 
     data = await state.get_data()
     origin = data['origin']
     destination = data['destination']
-    date = data['date']
-    class_type = data['class_type']
+    date_str = data['date']
+    class_type_str = data['class_type']
 
-    subscription_id = add_subscription(user_id, origin=origin, destination=destination, date=date, class_type=class_type, price=price)
+    class_map = {
+        'Плацкарт': TicketType.plackart,
+        'Купе': TicketType.cupe,
+        'СВ': TicketType.sv
+    }
+    ticket_class = class_map.get(class_type_str, TicketType.cupe)
 
-    if subscription_id:
-        await message.answer(
-            f"Оповещение успешно установлено! (ID {subscription_id})", reply_markup=main_menu_keyboard()
-        )
-        logger.info(
-            f"Пользователь {user_id} установил оповещение: {origin} -> {destination}, {date}, {class_type}, {price} руб. (ID {subscription_id})"
-        )
-    else:
-        await message.answer("Не удалось установить оповещение. Попробуйте позже.", reply_markup=main_menu_keyboard())
-        logger.error(f"Не удалось установить оповещение для пользователя {user_id}.")
+    try:
+        date_obj = datetime.strptime(date_str, "%d.%m.%Y")
+    except ValueError:
+        await message.answer("Ошибка в формате даты. Попробуйте снова.")
+        await state.clear()
+        return
+
+    try:
+        code_from = get_station_code(origin)
+        code_to = get_station_code(destination)
+    except ValueError:
+        await message.answer("Не удалось найти коды станций для указанных городов.")
+        await state.clear()
+        return
+
+    route_id = add_route(
+        from_station_id=int(code_from),
+        to_station_id=int(code_to),
+        from_date=date_obj,
+        to_date=date_obj,
+        train_no=None
+    )
+
+    add_subscription(user_id, route_id)
+
+    add_ticket(route_id, ticket_class.value, int(price))
+
+    await message.answer(
+        f"Оповещение успешно установлено! (ID {route_id})", reply_markup=main_menu_keyboard()
+    )
+    logger.info(
+        f"Пользователь {user_id} установил оповещение: {origin} -> {destination}, {date_str}, {class_type_str}, {price} руб. (ID {route_id})"
+    )
 
     await state.clear()
 
 @router.callback_query(F.data == "my_alerts")
 async def cb_my_alerts(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    logger.info(f"Пользователь {user_id} нажал кнопку 'Мои оповещения'.")
 
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался посмотреть оповещения.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     await callback_query.answer()
@@ -292,7 +310,6 @@ async def cb_my_alerts(callback_query: CallbackQuery):
 
     if not user_alerts:
         await bot.send_message(user_id, "У вас нет установленных оповещений.")
-        logger.info(f"Пользователь {user_id} не имеет оповещений.")
         return
 
     response = "Ваши оповещения:\n"
@@ -301,35 +318,30 @@ async def cb_my_alerts(callback_query: CallbackQuery):
             f"ID: {alert['id']}\n"
             f"Маршрут: {alert['origin']} -> {alert['destination']}\n"
             f"Дата: {alert['date']}\n"
-            f"Класс: {alert['class_type']}\n"
-            f"Макс. цена: {alert['price']} руб.\n\n"
+            f"Класс: {alert['class_type'] if alert['class_type'] else 'не указан'}\n"
+            f"Макс. цена: {alert['price'] if alert['price'] else 'не указана'} руб.\n\n"
         )
     response += "Для удаления оповещения используйте команду:\n" \
                 "/unsubscribe <id>\n" \
                 "Например: /unsubscribe 123"
     await bot.send_message(user_id, response)
-    logger.info(f"Пользователь {user_id} получил список своих оповещений.")
 
 @router.callback_query(F.data == "delete_alert")
 async def cb_delete_alert(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
-    logger.info(f"Пользователь {user_id} нажал кнопку 'Удалить оповещение'.")
 
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался удалить оповещение.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     await callback_query.answer()
     await state.set_state(DeleteAlertForm.alert_id)
     await bot.send_message(user_id, "Введите ID оповещения, которое хотите удалить:")
-    logger.info(f"Пользователь {user_id} переходит к вводу ID оповещения для удаления.")
 
 @router.message(DeleteAlertForm.alert_id)
 async def process_delete_alert_id(message: Message, state: FSMContext):
     user_id = message.from_user.id
     alert_id_text = message.text.strip()
-    logger.info(f"Пользователь {user_id} вводит ID оповещения для удаления: {alert_id_text}")
 
     if contains_forbidden_words(alert_id_text):
         await handle_inappropriate_input(message, state)
@@ -339,97 +351,79 @@ async def process_delete_alert_id(message: Message, state: FSMContext):
         alert_id = int(alert_id_text)
     except ValueError:
         await message.answer("Пожалуйста, введите корректный ID (число).")
-        logger.warning(f"Пользователь {user_id} ввел некорректный ID оповещения: {alert_id_text}")
         return
 
     success = remove_subscription(user_id, alert_id)
 
     if success:
         await message.answer("Оповещение успешно удалено.", reply_markup=main_menu_keyboard())
-        logger.info(f"Пользователь {user_id} удалил оповещение ID {alert_id}.")
     else:
         await message.answer("Оповещение с таким ID не найдено или не принадлежит вам.", reply_markup=main_menu_keyboard())
-        logger.info(f"Пользователь {user_id} попытался удалить несуществующее или чужое оповещение ID {alert_id}.")
 
     await state.clear()
 
 @router.callback_query(F.data == "get_tickets")
 async def cb_get_tickets(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
-    logger.info(f"Пользователь {user_id} запросил список билетов.")
 
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался получить билеты.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     await callback_query.answer()
     await state.set_state(TicketSearchForm.origin)
     await bot.send_message(user_id, "Введите город отправления:")
-    logger.info(f"Пользователь {user_id} переходит к вводу города отправления для поиска билетов.")
 
 @router.message(TicketSearchForm.origin)
 async def process_ticket_origin(message: Message, state: FSMContext):
     user_id = message.from_user.id
     text = message.text.strip()
-    logger.info(f"Пользователь {user_id} вводит город отправления для поиска билетов: {text}")
 
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающий город отправления для билетов.")
         return
 
     await state.update_data(origin=text)
     await state.set_state(TicketSearchForm.destination)
     await message.answer("Введите город назначения:")
-    logger.info(f"Пользователь {user_id} установил город отправления для билетов: {text}")
 
 @router.message(TicketSearchForm.destination)
 async def process_ticket_destination(message: Message, state: FSMContext):
     user_id = message.from_user.id
     text = message.text.strip()
-    logger.info(f"Пользователь {user_id} вводит город назначения для билетов: {text}")
 
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающий город назначения для билетов.")
         return
 
     await state.update_data(destination=text)
     await state.set_state(TicketSearchForm.date)
     await message.answer("Введите дату поездки в формате ДД.ММ.ГГГГ:")
-    logger.info(f"Пользователь {user_id} установил город назначения для билетов: {text}")
 
 @router.message(TicketSearchForm.date)
 async def process_ticket_date(message: Message, state: FSMContext):
     user_id = message.from_user.id
     text = message.text.strip()
-    logger.info(f"Пользователь {user_id} вводит дату поездки для билетов: {text}")
 
     if contains_forbidden_words(text):
         await handle_inappropriate_input(message, state)
-        logger.warning(f"Пользователь {user_id} ввел неподобающую дату поездки для билетов.")
         return
 
     if not re.match(r'\d{2}\.\d{2}\.\d{4}', text):
         await message.answer("Некорректный формат даты. Пожалуйста, используйте ДД.ММ.ГГГГ:")
-        logger.warning(f"Пользователь {user_id} ввел некорректный формат даты для билетов: {text}")
         return
 
     await state.update_data(date=text)
     await state.set_state(TicketSearchForm.class_type)
     await message.answer("Выберите класс билета:", reply_markup=ticket_options_keyboard())
-    logger.info(f"Пользователь {user_id} установил дату поездки для билетов: {text}")
 
 @router.callback_query(TicketSearchForm.class_type, F.data.in_(['ticket_econom', 'ticket_business', 'ticket_first']))
 async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
     class_data = callback_query.data
-    logger.info(f"Пользователь {user_id} выбрал класс билета для поиска: {class_data}")
 
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался использовать бота для поиска билетов.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     class_types = {
@@ -437,37 +431,31 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
         'ticket_business': 'Купе',
         'ticket_first': 'СВ'
     }
-    class_type = class_types.get(class_data, 'Неизвестный')
+    class_type_str = class_types.get(class_data, 'Неизвестный')
 
-    await state.update_data(class_type=class_type)
+    await state.update_data(class_type=class_type_str)
     await callback_query.answer()
-    await bot.send_message(user_id, f"Вы выбрали класс: {class_type}.")
-    logger.info(f"Пользователь {user_id} выбрал класс билета: {class_type}")
+    await bot.send_message(user_id, f"Вы выбрали класс: {class_type_str}.")
 
     data = await state.get_data()
     origin = data['origin']
     destination = data['destination']
-    date = data['date']
+    date_str = data['date']
 
-    # Сначала получаем коды станций
     try:
         code_from = get_station_code(origin)
         code_to = get_station_code(destination)
     except ValueError:
         await bot.send_message(user_id, "Не удалось найти коды станций для указанных городов.")
-        logger.error(f"Не удалось найти коды станций для {origin} или {destination}.")
         await state.clear()
         return
 
-    result_data = get_train_routes_with_session(code_from, code_to, date)
+    result_data = get_train_routes_with_session(code_from, code_to, date_str)
     if result_data is None or result_data == 'NO TICKETS':
         await bot.send_message(user_id, "Билеты не найдены.")
-        logger.info(f"Для пользователя {user_id} не найдены билеты.")
         await state.clear()
         return
 
-    # result_data ключ 'tp'
-    # и 'list' со списком поездов.
     routes = []
     try:
         tp = result_data.get('tp', [])
@@ -477,7 +465,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
                 route_id = train.get('number', f"train_{idx}")
                 station_from = train.get('station0', origin)
                 station_to = train.get('station1', destination)
-                route_date = date
+                route_date = date_str
                 cars = train.get('cars', [])
                 best_price = None
                 if cars:
@@ -505,7 +493,6 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
 
     if not routes:
         await bot.send_message(user_id, "Билеты не найдены.")
-        logger.info(f"Для пользователя {user_id} не найдены билеты (после обработки).")
     else:
         for route in routes:
             response = (
@@ -513,11 +500,10 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
                 f"Маршрут: {route['station_from']} -> {route['station_to']}\n"
                 f"Глобальный маршрут: {route['route_global']}\n"
                 f"Дата: {route['date']}\n"
-                f"Класс: {class_type}\n"
+                f"Класс: {class_type_str}\n"
                 f"Цена: {route['best_price']} руб.\n\n"
             )
-            await bot.send_message(user_id, response, reply_markup=subscribe_button(route['route_id']))
-            logger.info(f"Пользователь {user_id} получил маршрут ID {route['route_id']}.")
+            await bot.send_message(user_id, response)
 
     await state.clear()
 
@@ -525,35 +511,26 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
 async def cb_subscribe_route(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался подписаться на маршрут.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     try:
         route_id = int(callback_query.data.split("_")[1])
     except (IndexError, ValueError):
         await callback_query.answer("Некорректный идентификатор маршрута.")
-        logger.warning(f"Пользователь {user_id} передал некорректный route_id.")
         return
 
-    subscription_id = add_subscription(user_id, route_id=route_id)
+    add_subscription(user_id, route_id)
 
-    if subscription_id:
-        await callback_query.answer("Подписка успешно оформлена!")
-        await bot.send_message(user_id, f"Вы подписались на маршрут ID {route_id}!", reply_markup=main_menu_keyboard())
-        logger.info(f"Пользователь {user_id} подписался на маршрут ID {route_id} с подпиской ID {subscription_id}.")
-    else:
-        await callback_query.answer("Не удалось оформить подписку.")
-        logger.error(f"Не удалось оформить подписку для пользователя {user_id} на маршрут ID {route_id}.")
+    await callback_query.answer("Подписка успешно оформлена!")
+    await bot.send_message(user_id, f"Вы подписались на маршрут ID {route_id}!", reply_markup=main_menu_keyboard())
 
 @router.callback_query(F.data == "my_subscriptions")
 async def cb_my_subscriptions(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    logger.info(f"Пользователь {user_id} нажал кнопку 'Мои подписки'.")
 
     if user_id in banned_users:
-        await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался посмотреть подписки.")
+        await callback_query.answer("Вы заблокированы.")
         return
 
     await callback_query.answer()
@@ -562,29 +539,26 @@ async def cb_my_subscriptions(callback_query: CallbackQuery):
 
     if not subscriptions:
         await bot.send_message(user_id, "У вас нет активных подписок.")
-        logger.info(f"Пользователь {user_id} не имеет активных подписок.")
         return
 
     response = "Ваши подписки:\n"
     for sub in subscriptions:
         response += (
-            f"ID подписки: {sub['subscription_id']}\n"
-            f"Маршрут: {sub['route_global']}\n"
+            f"ID подписки: {sub['id']}\n"
+            f"Маршрут: {sub['origin']} -> {sub['destination']}\n"
             f"Дата: {sub['date']}\n"
-            f"Цена: {sub['best_price']} руб.\n\n"
+            f"Цена: {sub['price'] if sub['price'] else 'не указана'} руб.\n\n"
         )
     response += "Для удаления подписки используйте команду:\n" \
                 "/unsubscribe <id>\n" \
                 "Например: /unsubscribe 123"
     await bot.send_message(user_id, response)
-    logger.info(f"Пользователь {user_id} получил список своих подписок.")
 
 @router.message(Command('subscribe'))
 async def subscribe_route(message: Message):
     user_id = message.from_user.id
     if user_id in banned_users:
-        await message.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался подписаться на маршрут через команду.")
+        await message.answer("Вы заблокированы.")
         return
 
     args = message.text.split()
@@ -601,21 +575,14 @@ async def subscribe_route(message: Message):
         await message.answer("Пожалуйста, введите корректные числовые значения для ID маршрута и максимальной цены.")
         return
 
-    subscription_id = add_subscription(user_id, route_id=route_id, max_price=max_price)
-
-    if subscription_id:
-        await message.answer(f"Подписка успешно оформлена! (ID {subscription_id})")
-        logger.info(f"Пользователь {user_id} подписался на маршрут ID {route_id} с максимальной ценой {max_price}. Подписка ID {subscription_id}.")
-    else:
-        await message.answer("Не удалось подписаться на маршрут. Возможно, маршрут не найден.")
-        logger.warning(f"Пользователь {user_id} попытался подписаться на несуществующий маршрут ID {route_id}.")
+    add_subscription(user_id, route_id)
+    await message.answer(f"Подписка успешно оформлена! (ID {route_id})")
 
 @router.message(Command('unsubscribe'))
 async def unsubscribe_route(message: Message):
     user_id = message.from_user.id
     if user_id in banned_users:
-        await message.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался удалить подписку через команду.")
+        await message.answer("Вы заблокированы.")
         return
 
     args = message.text.split()
@@ -633,37 +600,32 @@ async def unsubscribe_route(message: Message):
 
     if success:
         await message.answer("Подписка успешно удалена.", reply_markup=main_menu_keyboard())
-        logger.info(f"Пользователь {user_id} удалил подписку ID {sub_id}.")
     else:
         await message.answer("Подписка с таким ID не найдена или не принадлежит вам.", reply_markup=main_menu_keyboard())
-        logger.info(f"Пользователь {user_id} попытался удалить несуществующую или чужую подписку ID {sub_id}.")
 
 @router.message(Command('subscriptions'))
 async def list_subscriptions(message: Message):
     user_id = message.from_user.id
     if user_id in banned_users:
-        await message.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Блокированный пользователь {user_id} попытался посмотреть подписки через команду.")
+        await message.answer("Вы заблокированы.")
         return
 
     subscriptions = get_subscriptions(user_id)
     if not subscriptions:
         await message.answer("У вас нет действующих подписок.")
-        logger.info(f"Пользователь {user_id} не имеет подписок.")
         return
 
     response = "Ваши подписки:\n"
     for sub in subscriptions:
         response += (
-            f"ID подписки: {sub['subscription_id']}\n"
-            f"Маршрут: {sub['route_global']}\n"
+            f"ID подписки: {sub['id']}\n"
+            f"Маршрут: {sub['origin']} -> {sub['destination']}\n"
             f"Дата: {sub['date']}\n"
-            f"Цена: {sub['best_price']} руб.\n\n"
+            f"Цена: {sub['price'] if sub['price'] else 'не указана'} руб.\n\n"
         )
     response += "Для удаления подписки используйте команду:\n" \
                 "/unsubscribe <id>"
     await message.answer(response)
-    logger.info(f"Пользователь {user_id} получил список своих подписок.")
 
 async def scheduled_clean():
     while True:
