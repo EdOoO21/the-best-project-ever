@@ -12,13 +12,16 @@ from datetime import datetime
 import logging
 import re
 
-from ed_requests import (
-    get_routes,
+from database.queries.users import (
     add_subscription,
     get_subscriptions,
-    remove_subscription,
-    clean_old_subscriptions,
+    remove_subscription
 )
+from requests.api_requests import (
+    get_train_routes_with_session,
+    get_station_code
+)
+from update_db import update_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,9 +64,6 @@ registered = set()
 banned_users = set()
 
 def main_menu_keyboard():
-    """
-    Создает главное меню бота с набором кнопок
-    """
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Установить оповещение", callback_data="set_alert"),
@@ -82,9 +82,6 @@ def main_menu_keyboard():
     return keyboard
 
 def ticket_options_keyboard():
-    """
-    Клавиатура для выбора типа билета
-    """
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Плацкарт", callback_data="ticket_econom"),
@@ -97,9 +94,6 @@ def ticket_options_keyboard():
     return keyboard
 
 def subscribe_button(route_id: int):
-    """
-    Создает кнопку для подписки на маршрут
-    """
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Подписаться на маршрут", callback_data=f"subscribe_{route_id}")
@@ -108,9 +102,6 @@ def subscribe_button(route_id: int):
     return keyboard
 
 async def handle_inappropriate_input(message: Message, state: FSMContext):
-    """
-    Блокирует пользователя и уведомляет его о нарушении
-    """
     user_id = message.from_user.id
     await message.answer("Обнаружено неподобающее поведение. Вы заблокированы.")
     banned_users.add(user_id)
@@ -118,9 +109,6 @@ async def handle_inappropriate_input(message: Message, state: FSMContext):
     logger.warning(f"Пользователь {user_id} был заблокирован за неподобающий ввод.")
 
 def contains_forbidden_words(text):
-    """
-    Проверяет, содержит ли текст запрещенные слова
-    """
     if not FORBIDDEN_WORDS:
         return False
     pattern = re.compile('|'.join(map(re.escape, FORBIDDEN_WORDS)), re.IGNORECASE)
@@ -128,9 +116,6 @@ def contains_forbidden_words(text):
 
 @router.message(Command('start'))
 async def cmd_start(message: types.Message):
-    """
-    Обрабатывает команду /start: регистрирует пользователя и показывает главное меню
-    """
     user_id = message.from_user.id
     if user_id in banned_users:
         await message.answer("Вы заблокированы и не можете использовать этого бота.")
@@ -157,9 +142,6 @@ async def cmd_start(message: types.Message):
 
 @router.callback_query(F.data == "set_alert")
 async def cb_set_alert(callback_query: CallbackQuery, state: FSMContext):
-    """
-    Обрабатывает нажатие кнопки "Установить оповещение": переходит к вводу города отправления
-    """
     user_id = callback_query.from_user.id
     logger.info(f"Пользователь {user_id} нажал кнопку 'Установить оповещение'.")
 
@@ -175,9 +157,6 @@ async def cb_set_alert(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(AlertForm.origin)
 async def process_origin(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод города отправления и переходит к вводу города назначения
-    """
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} вводит город отправления: {message.text}")
 
@@ -194,9 +173,6 @@ async def process_origin(message: Message, state: FSMContext):
 
 @router.message(AlertForm.destination)
 async def process_destination(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод города назначения и переходит к вводу даты поездки
-    """
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} вводит город назначения: {message.text}")
 
@@ -213,9 +189,6 @@ async def process_destination(message: Message, state: FSMContext):
 
 @router.message(AlertForm.date)
 async def process_date(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод даты поездки и переходит к выбору класса билета
-    """
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} вводит дату поездки: {message.text}")
 
@@ -237,9 +210,6 @@ async def process_date(message: Message, state: FSMContext):
 
 @router.callback_query(AlertForm.class_type, F.data.in_(['ticket_econom', 'ticket_business', 'ticket_first']))
 async def process_alert_class(callback_query: CallbackQuery, state: FSMContext):
-    """
-    Обрабатывает выбор класса билета для оповещения и переходит к вводу максимальной цены
-    """
     user_id = callback_query.from_user.id
     class_data = callback_query.data
     logger.info(f"Пользователь {user_id} выбрал класс билета для оповещения: {class_data}")
@@ -261,16 +231,12 @@ async def process_alert_class(callback_query: CallbackQuery, state: FSMContext):
     await bot.send_message(user_id, f"Вы выбрали класс: {class_type}.")
     logger.info(f"Пользователь {user_id} выбрал класс билета: {class_type}")
 
-    # Переходим к вводу максимальной цены
     await state.set_state(AlertForm.price)
     await bot.send_message(user_id, "Введите максимальную цену билета:")
     logger.info(f"Пользователь {user_id} переходит к вводу максимальной цены.")
 
 @router.message(AlertForm.price)
 async def process_price(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод максимальной цены билета и сохраняет оповещение
-    """
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} вводит максимальную цену билета: {message.text}")
 
@@ -295,7 +261,7 @@ async def process_price(message: Message, state: FSMContext):
     date = data['date']
     class_type = data['class_type']
 
-    subscription_id = add_subscription(user_id, origin, destination, date, class_type, price)
+    subscription_id = add_subscription(user_id, origin=origin, destination=destination, date=date, class_type=class_type, price=price)
 
     if subscription_id:
         await message.answer(
@@ -312,9 +278,6 @@ async def process_price(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "my_alerts")
 async def cb_my_alerts(callback_query: CallbackQuery):
-    """
-    Обрабатывает нажатие кнопки "Мои оповещения": показывает список установленных оповещений
-    """
     user_id = callback_query.from_user.id
     logger.info(f"Пользователь {user_id} нажал кнопку 'Мои оповещения'.")
 
@@ -349,9 +312,6 @@ async def cb_my_alerts(callback_query: CallbackQuery):
 
 @router.callback_query(F.data == "delete_alert")
 async def cb_delete_alert(callback_query: CallbackQuery, state: FSMContext):
-    """
-    Обрабатывает нажатие кнопки "Удалить оповещение": переходит к вводу ID оповещения для удаления
-    """
     user_id = callback_query.from_user.id
     logger.info(f"Пользователь {user_id} нажал кнопку 'Удалить оповещение'.")
 
@@ -367,9 +327,6 @@ async def cb_delete_alert(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(DeleteAlertForm.alert_id)
 async def process_delete_alert_id(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод ID оповещения для удаления
-    """
     user_id = message.from_user.id
     alert_id_text = message.text.strip()
     logger.info(f"Пользователь {user_id} вводит ID оповещения для удаления: {alert_id_text}")
@@ -398,9 +355,6 @@ async def process_delete_alert_id(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "get_tickets")
 async def cb_get_tickets(callback_query: CallbackQuery, state: FSMContext):
-    """
-    Обрабатывает нажатие кнопки "Получить билеты": начинает сбор данных для поиска билетов
-    """
     user_id = callback_query.from_user.id
     logger.info(f"Пользователь {user_id} запросил список билетов.")
 
@@ -416,9 +370,6 @@ async def cb_get_tickets(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(TicketSearchForm.origin)
 async def process_ticket_origin(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод города отправления для поиска билетов
-    """
     user_id = message.from_user.id
     text = message.text.strip()
     logger.info(f"Пользователь {user_id} вводит город отправления для поиска билетов: {text}")
@@ -435,9 +386,6 @@ async def process_ticket_origin(message: Message, state: FSMContext):
 
 @router.message(TicketSearchForm.destination)
 async def process_ticket_destination(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод города назначения для поиска билетов
-    """
     user_id = message.from_user.id
     text = message.text.strip()
     logger.info(f"Пользователь {user_id} вводит город назначения для билетов: {text}")
@@ -454,9 +402,6 @@ async def process_ticket_destination(message: Message, state: FSMContext):
 
 @router.message(TicketSearchForm.date)
 async def process_ticket_date(message: Message, state: FSMContext):
-    """
-    Обрабатывает ввод даты поездки для поиска билетов
-    """
     user_id = message.from_user.id
     text = message.text.strip()
     logger.info(f"Пользователь {user_id} вводит дату поездки для билетов: {text}")
@@ -478,9 +423,6 @@ async def process_ticket_date(message: Message, state: FSMContext):
 
 @router.callback_query(TicketSearchForm.class_type, F.data.in_(['ticket_econom', 'ticket_business', 'ticket_first']))
 async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext):
-    """
-    Обрабатывает выбор класса билета для поиска
-    """
     user_id = callback_query.from_user.id
     class_data = callback_query.data
     logger.info(f"Пользователь {user_id} выбрал класс билета для поиска: {class_data}")
@@ -507,11 +449,63 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
     destination = data['destination']
     date = data['date']
 
-    routes = get_routes(origin, destination, date, class_type)
+    # Сначала получаем коды станций
+    try:
+        code_from = get_station_code(origin)
+        code_to = get_station_code(destination)
+    except ValueError:
+        await bot.send_message(user_id, "Не удалось найти коды станций для указанных городов.")
+        logger.error(f"Не удалось найти коды станций для {origin} или {destination}.")
+        await state.clear()
+        return
+
+    result_data = get_train_routes_with_session(code_from, code_to, date)
+    if result_data is None or result_data == 'NO TICKETS':
+        await bot.send_message(user_id, "Билеты не найдены.")
+        logger.info(f"Для пользователя {user_id} не найдены билеты.")
+        await state.clear()
+        return
+
+    # result_data ключ 'tp'
+    # и 'list' со списком поездов.
+    routes = []
+    try:
+        tp = result_data.get('tp', [])
+        if tp and 'list' in tp[0]:
+            trains = tp[0]['list']
+            for idx, train in enumerate(trains, start=1):
+                route_id = train.get('number', f"train_{idx}")
+                station_from = train.get('station0', origin)
+                station_to = train.get('station1', destination)
+                route_date = date
+                cars = train.get('cars', [])
+                best_price = None
+                if cars:
+                    prices = []
+                    for car in cars:
+                        price_value = car.get('tariff', {}).get('value')
+                        if price_value is not None:
+                            prices.append(price_value)
+                    if prices:
+                        best_price = min(prices)
+                if best_price is None:
+                    best_price = "нет данных"
+
+                routes.append({
+                    'route_id': route_id,
+                    'station_from': station_from,
+                    'station_to': station_to,
+                    'route_global': f"{station_from}-{station_to}",
+                    'date': route_date,
+                    'best_price': best_price
+                })
+    except Exception as e:
+        logger.error(f"Ошибка при обработке данных маршрута: {e}")
+        routes = []
 
     if not routes:
         await bot.send_message(user_id, "Билеты не найдены.")
-        logger.info(f"Для пользователя {user_id} не найдены билеты.")
+        logger.info(f"Для пользователя {user_id} не найдены билеты (после обработки).")
     else:
         for route in routes:
             response = (
@@ -529,9 +523,6 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
 
 @router.callback_query(F.data.startswith("subscribe_"))
 async def cb_subscribe_route(callback_query: CallbackQuery):
-    """
-    Обрабатывает подписку на выбранный маршрут
-    """
     user_id = callback_query.from_user.id
     if user_id in banned_users:
         await callback_query.answer("Вы заблокированы и не можете использовать этого бота.")
@@ -557,9 +548,6 @@ async def cb_subscribe_route(callback_query: CallbackQuery):
 
 @router.callback_query(F.data == "my_subscriptions")
 async def cb_my_subscriptions(callback_query: CallbackQuery):
-    """
-    Обрабатывает нажатие кнопки "Мои подписки": показывает список подписок пользователя
-    """
     user_id = callback_query.from_user.id
     logger.info(f"Пользователь {user_id} нажал кнопку 'Мои подписки'.")
 
@@ -593,9 +581,6 @@ async def cb_my_subscriptions(callback_query: CallbackQuery):
 
 @router.message(Command('subscribe'))
 async def subscribe_route(message: Message):
-    """
-    Обрабатывает команду /subscribe для подписки на маршрут по ID
-    """
     user_id = message.from_user.id
     if user_id in banned_users:
         await message.answer("Вы заблокированы и не можете использовать этого бота.")
@@ -627,9 +612,6 @@ async def subscribe_route(message: Message):
 
 @router.message(Command('unsubscribe'))
 async def unsubscribe_route(message: Message):
-    """
-    Обрабатывает команду /unsubscribe для удаления подписки по ID
-    """
     user_id = message.from_user.id
     if user_id in banned_users:
         await message.answer("Вы заблокированы и не можете использовать этого бота.")
@@ -658,9 +640,6 @@ async def unsubscribe_route(message: Message):
 
 @router.message(Command('subscriptions'))
 async def list_subscriptions(message: Message):
-    """
-    Обрабатывает команду /subscriptions для вывода списка подписок
-    """
     user_id = message.from_user.id
     if user_id in banned_users:
         await message.answer("Вы заблокированы и не можете использовать этого бота.")
@@ -687,12 +666,9 @@ async def list_subscriptions(message: Message):
     logger.info(f"Пользователь {user_id} получил список своих подписок.")
 
 async def scheduled_clean():
-    """
-    Периодически очищает старые подписки
-    """
     while True:
-        clean_old_subscriptions()
-        logger.info("Периодическая очистка старых подписок выполнена.")
+        update_db()
+        logger.info("Периодическая очистка/обновление базы данных выполнена.")
         await asyncio.sleep(86400)  # раз в сутки
 
 async def main():
