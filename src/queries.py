@@ -2,6 +2,7 @@ from src.models import City, Station, Route, User, Subscription, Ticket, UserSta
 from src.database import engine, session
 import json
 
+
 def create_tables():
     Base.metadata.drop_all(engine)
     engine.echo = False
