@@ -3,9 +3,6 @@ from sqlalchemy import create_engine
 from bot.config import settings
 
 
-engine = create_engine(
-    url=settings.DATABASE_URL_psycopg,
-    echo=True
-)
+engine = create_engine(url=settings.DATABASE_URL_psycopg, echo=True)
 
 session = scoped_session(sessionmaker(engine))

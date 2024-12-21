@@ -9,8 +9,8 @@ from alembic import context
 
 from bot.config import settings
 
-from models import Base
-from models import *  # noqa
+from src.db.models import Base
+from src.db.models import *  # noqa
 
 
 config = context.config
@@ -61,9 +61,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

@@ -1,4 +1,4 @@
-import src.queries as q
+import src.db.queries as q
 from datetime import datetime
 
 q.create_tables()
@@ -10,9 +10,21 @@ q.add_station(station_name="пупупу", station_id=58858, city_id=2010359)
 q.add_station(station_name="у черта на куличиках", station_id=3933, city_id=2060533)
 
 # функция добавления маршрута возвращает сразу айдишник полученного маршрута
-added_route_id = q.add_route(from_station_id=58858, from_date=datetime(2024, 6, 19, 9, 14, 10), to_station_id=3933, to_date=datetime(2024, 7, 23, 7, 34, 11), train_no=None)
+added_route_id = q.add_route(
+    from_station_id=58858,
+    from_date=datetime(2024, 6, 19, 9, 14, 10),
+    to_station_id=3933,
+    to_date=datetime(2024, 7, 23, 7, 34, 11),
+    train_no=None,
+)
 
 q.add_user(user_id=19999)
 q.add_subscription(user_id=19999, route_id=added_route_id)
 
 print(*q.get_routes_subscribed())  # >> 1  как раз маршрут добавленный с номером 1
+
+
+q.add_ticket(added_route_id, q.TicketType.cupe, 8881313)
+
+
+print([ticket for ticket in q.session.query(q.Ticket).distinct().all()])

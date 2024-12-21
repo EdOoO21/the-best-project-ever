@@ -1,6 +1,7 @@
 from api_requests import get_train_routes_with_session, get_station_code
 from datetime import datetime, timedelta
 
+
 def test_get_train_routes_with_seats():
     """Тест на получение маршрутов (места есть)"""
     code_from = "2000000"
@@ -9,8 +10,10 @@ def test_get_train_routes_with_seats():
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=True)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (result == "NO TICKETS"), \
-        "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+    assert isinstance(result, dict) or (
+        result == "NO TICKETS"
+    ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+
 
 def test_get_train_routes_without_seats():
     """Тест на получение маршрутов (без мест)"""
@@ -20,8 +23,10 @@ def test_get_train_routes_without_seats():
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=False)
     assert result is not None, "Результат должен быть не None"
-    assert isinstance(result, dict) or result == "NO TICKETS", \
-        "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+    assert (
+        isinstance(result, dict) or result == "NO TICKETS"
+    ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+
 
 def test_get_station_code_success():
     """Тест на получение кода станции"""
@@ -31,6 +36,7 @@ def test_get_station_code_success():
     assert get_station_code("бобров") == "2014522"
     assert get_station_code("кораблино") == "2000090"
     assert get_station_code("яя") == "2028022"
+
 
 def test_get_train_routes_with_seats_get_codes():
     """Тест на получение маршрутов без кодов (места есть)"""
@@ -42,8 +48,10 @@ def test_get_train_routes_with_seats_get_codes():
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=True)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (result == "NO TICKETS"), \
-        "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+    assert isinstance(result, dict) or (
+        result == "NO TICKETS"
+    ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+
 
 def test_get_train_routes_without_seats_get_codes():
     """Тест на получение маршрутов без кодов (мест нет)"""
@@ -55,5 +63,6 @@ def test_get_train_routes_without_seats_get_codes():
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=False)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (result == "NO TICKETS"), \
-        "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
+    assert isinstance(result, dict) or (
+        result == "NO TICKETS"
+    ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"

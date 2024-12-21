@@ -15,7 +15,8 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                 Chrome/117.0.0.0 Safari/537.36",
         "Referer": "https://pass.rzd.ru/",
         "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Connection": "keep-alive"}
+        "Connection": "keep-alive",
+    }
 
     params = {
         "layer_id": 5827,
@@ -24,14 +25,14 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
         "checkSeats": 1 if with_seats else 0,
         "code0": code_from,
         "code1": code_to,
-        "dt0": "24.12.2024"
+        "dt0": "24.12.2024",
     }
 
     response = session.get(base_url, params=params, headers=headers)
     if response.status_code == 200:
         try:
-            result = response.json().get('result')
-            if result == 'RID':
+            result = response.json().get("result")
+            if result == "RID":
 
                 data = response.json()
                 rid = data.get("RID")
@@ -42,7 +43,8 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
 
                 second_url = f"{base_url}?layer_id=5827&rid={rid}"
                 second_response = session.get(
-                    second_url, headers=headers, params=params)
+                    second_url, headers=headers, params=params
+                )
 
                 if second_response.status_code == 200:
                     data = second_response.json()
@@ -50,19 +52,22 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                     try:
                         return data
                     except ValueError:
-                        print("Ошибка преобразования \
-                                ответа второго запроса в JSON.")
+                        print(
+                            "Ошибка преобразования \
+                                ответа второго запроса в JSON."
+                        )
                         print(second_response.text)
                         return None
                 else:
                     print(
                         f"Что-то пошло не так при втором запросе, \
                                 статус ошибки:: {second_response.status_code},\
-                                        причина: {second_response.reason}")
+                                        причина: {second_response.reason}"
+                    )
                     return None
-            elif result == 'OK':
+            elif result == "OK":
                 data = response.json()
-                return 'NO TICKETS'
+                return "NO TICKETS"
             else:
                 return None
         except ValueError:
@@ -72,7 +77,8 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
     else:
         print(
             f"Что-то пошло не так при первом запросе, статус ошибки: \
-                {response.status_code}\nПричина: {response.reason}")
+                {response.status_code}\nПричина: {response.reason}"
+        )
         return None
 
 
@@ -80,9 +86,9 @@ def get_station_code(station_name):
     """
     Получает код города/станции по названию.
     """
-    with open("./docs/city_codes.json", 'r') as file:
+    with open("./docs/city_codes.json", "r") as file:
         file = json.load(file)
         ans = file.get(station_name)
         if ans:
             return ans
-        raise ValueError('Город/станция не найдены')
+        raise ValueError("Город/станция не найдены")
