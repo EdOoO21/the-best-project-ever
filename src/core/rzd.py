@@ -71,7 +71,7 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                 return "NO TICKETS"
             else:
                 return None
-        except ValueError:
+        except Exception as e:
             print("Ошибка преобразования ответа первого запроса в JSON.")
             print(response.text)
             return None
@@ -87,7 +87,7 @@ def get_station_code(station_name):
     """
     Получает код города/станции по названию.
     """
-    with open("./docs/city_codes.json", "r") as file:
+    with open("./resources/city_codes.json", "r") as file:
         file = json.load(file)
         ans = file.get(station_name)
         if ans:

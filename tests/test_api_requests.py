@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from requests_and_update.api_requests import (get_station_code,
+from core.rzd import (get_station_code,
                                               get_train_routes_with_session)
 
 

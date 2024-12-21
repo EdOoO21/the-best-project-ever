@@ -13,9 +13,9 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton,
                            InlineKeyboardMarkup, Message)
 from dotenv import load_dotenv
 
-from requests_and_update.api_requests import (get_station_code,
+from core.rzd import (get_station_code,
                                               get_train_routes_with_session)
-from requests_and_update.update_db import update as update_db
+from core.update_db import update as update_db
 from src.db.database import session
 from src.db.models import (City, Route, Station, Subscription, TicketType,
                            User, UserStatus)
@@ -747,7 +747,7 @@ async def main():
 
 if __name__ == "__main__":
     load_cities_from_json("./sources/city_codes.json")
-    
+
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):

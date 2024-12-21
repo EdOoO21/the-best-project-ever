@@ -1,7 +1,7 @@
 import time
 
 import schedule
-from update_db import update
+from .update_db import update
 
 
 def job():
