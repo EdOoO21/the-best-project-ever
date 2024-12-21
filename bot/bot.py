@@ -746,7 +746,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    load_cities_from_json("./docs/city_codes.json")
+    load_cities_from_json("./sources/city_codes.json")
     
     try:
         asyncio.run(main())

@@ -30,9 +30,15 @@ def get_routes_subscribed():
     """получаем список уникальных айди маршрутов, которые находятся в таблице подписок"""
     try:
         result = session.query(Subscription.route_id).distinct().all()
+        subscribed_routes_info = {}
         return [route_id[0] for route_id in result]
     except Exception:
         return []
+
+
+def get_route_by_id(route_id: int):
+    """получаем маршрут по его айди"""
+    return session.query(Route).filter_by(route_id=route_id).first()
 
 
 def add_city(city_name: str, city_code: int):
