@@ -1,5 +1,7 @@
-from requests_and_update.api_requests import get_train_routes_with_session, get_station_code
 from datetime import datetime, timedelta
+
+from requests_and_update.api_requests import (get_station_code,
+                                              get_train_routes_with_session)
 
 
 def test_get_train_routes_with_seats():

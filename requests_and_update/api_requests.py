@@ -1,6 +1,7 @@
 import json
-import requests
 import time
+
+import requests
 
 
 def get_train_routes_with_session(code_from, code_to, date, with_seats=True):

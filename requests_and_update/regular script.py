@@ -1,5 +1,6 @@
-import schedule
 import time
+
+import schedule
 from update_db import update
 
 

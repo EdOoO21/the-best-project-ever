@@ -1,5 +1,6 @@
-import src.db.queries as q
 from datetime import datetime
+
+import src.db.queries as q
 
 q.create_tables()
 q.load_cities_from_json("./docs/city_codes.json")

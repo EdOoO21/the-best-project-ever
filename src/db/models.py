@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Enum, Integer, String, DateTime, ForeignKey, text
-from sqlalchemy.orm import relationship, DeclarativeBase
 import enum
+
+from sqlalchemy import (Column, DateTime, Enum, ForeignKey, Integer, String,
+                        text)
+from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 class Base(DeclarativeBase):

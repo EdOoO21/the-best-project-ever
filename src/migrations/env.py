@@ -2,16 +2,12 @@
 
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 from bot.config import settings
-
-from src.db.models import Base
 from src.db.models import *  # noqa
-
+from src.db.models import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_psycopg)

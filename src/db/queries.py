@@ -1,15 +1,8 @@
-from src.db.models import (
-    City,
-    Station,
-    Route,
-    User,
-    Subscription,
-    Ticket,
-    UserStatus,
-    Base,
-)
-from src.db.database import engine, session
 import json
+
+from src.db.database import engine, session
+from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
+                           User, UserStatus)
 
 
 def create_tables():

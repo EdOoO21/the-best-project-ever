@@ -9,28 +9,18 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import (
-    CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-)
+from aiogram.types import (CallbackQuery, InlineKeyboardButton,
+                           InlineKeyboardMarkup, Message)
 from dotenv import load_dotenv
 
-from requests_and_update.api_requests import (
-    get_station_code,
-    get_train_routes_with_session,
-)
+from requests_and_update.api_requests import (get_station_code,
+                                              get_train_routes_with_session)
 from requests_and_update.update_db import update as update_db
 from src.db.database import session
-from src.db.models import City, Route, Station, Subscription, TicketType, User, UserStatus
-from src.db.queries import (
-    add_route,
-    add_subscription,
-    add_user,
-    delete_subscription,
-    load_cities_from_json,
-)
+from src.db.models import (City, Route, Station, Subscription, TicketType,
+                           User, UserStatus)
+from src.db.queries import (add_route, add_subscription, add_user,
+                            delete_subscription, load_cities_from_json)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

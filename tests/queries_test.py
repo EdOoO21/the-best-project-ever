@@ -1,18 +1,10 @@
 import unittest
-from unittest.mock import patch, MagicMock
-from src.db.queries import (
-    add_city,
-    add_station,
-    add_route,
-    delete_route,
-    add_user,
-    update_user,
-    delete_user,
-    add_subscription,
-    delete_subscription,
-    add_ticket,
-    delete_ticket_by_id,
-)
+from unittest.mock import MagicMock, patch
+
+from src.db.queries import (add_city, add_route, add_station, add_subscription,
+                            add_ticket, add_user, delete_route,
+                            delete_subscription, delete_ticket_by_id,
+                            delete_user, update_user)
 
 
 class TestDatabaseQueries(unittest.TestCase):
