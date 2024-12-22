@@ -1,8 +1,10 @@
 import json
+
 from sqlalchemy import func
+
 from src.db.database import engine, session
 from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
-                           User, UserStatus, TicketType)
+                           TicketType, User, UserStatus)
 
 
 def create_tables():
@@ -36,20 +38,24 @@ def get_routes_subscribed():
 def get_route_with_tickets_by_id(route_id: int) -> dict:
     """получаем маршрут (его данные + последнюю стоимость из собранных "билетов") по его айди"""
     result = {
-        "route_id": None, 
-        "from_station": None, 
-        "to_station": None, 
-        "from_date": None, 
+        "route_id": None,
+        "from_station": None,
+        "to_station": None,
+        "from_date": None,
         "to_date": None,
-        "train_no": None, 
-        "tickets": {}, 
-        }
+        "train_no": None,
+        "tickets": {},
+    }
 
     route = session.query(Route).filter_by(route_id=route_id).first()
     if route:
         result["route_id"] = route.route_id
-        result["from_station"] = route.from_station.station_id  # route.from_station.station_name
-        result["to_station"] = route.to_station.station_id  # route.to_station.station_name
+        result["from_station"] = (
+            route.from_station.station_id
+        )  # route.from_station.station_name
+        result["to_station"] = (
+            route.to_station.station_id
+        )  # route.to_station.station_name
         result["from_date"] = route.from_date
         result["to_date"] = route.to_date
         result["train_no"] = route.train_no
@@ -57,13 +63,19 @@ def get_route_with_tickets_by_id(route_id: int) -> dict:
         # получили по самому последнему по времени обновления билету каждого класса с таким маршрутом
 
         subquery = (
-            session.query(Ticket.class_name,func.max(Ticket.update_time).label('max_update_time'))
-            .filter(Ticket.route_id == route_id).group_by(Ticket.class_name)
-            ).subquery()
+            session.query(
+                Ticket.class_name, func.max(Ticket.update_time).label("max_update_time")
+            )
+            .filter(Ticket.route_id == route_id)
+            .group_by(Ticket.class_name)
+        ).subquery()
 
         tickets = (
-            session.query(Ticket)
-            .join(subquery, (Ticket.class_name == subquery.c.class_name) & (Ticket.update_time == subquery.c.max_update_time))
+            session.query(Ticket).join(
+                subquery,
+                (Ticket.class_name == subquery.c.class_name)
+                & (Ticket.update_time == subquery.c.max_update_time),
+            )
         ).all()
 
         if tickets:

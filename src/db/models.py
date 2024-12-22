@@ -146,7 +146,6 @@ class Ticket(Base):
         "Route", back_populates="tickets", foreign_keys="Ticket.route_id"
     )
 
-    
     def __str__(self):
         return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
 

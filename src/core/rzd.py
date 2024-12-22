@@ -1,7 +1,8 @@
+import http
 import json
 import logging
 import time
-import http
+
 import requests
 
 
@@ -64,8 +65,10 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
             else:
                 return None
         except Exception as e:
-            logging.error(f"Ошибка преобразования ответа первого запроса в JSON,  \
-                          статус ошибки: {second_response.status_code}, причина: {second_response.reason}, ошибка: {e}")
+            logging.error(
+                f"Ошибка преобразования ответа первого запроса в JSON,  \
+                          статус ошибки: {second_response.status_code}, причина: {second_response.reason}, ошибка: {e}"
+            )
             logging.debug(response.text)
             return None
     else:

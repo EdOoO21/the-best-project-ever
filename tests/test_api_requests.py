@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from src.core.rzd import get_train_routes_with_session, get_station_code
+from src.core.rzd import get_station_code, get_train_routes_with_session
 
 
 def test_get_train_routes_with_seats():
