@@ -1,7 +1,9 @@
 import json
-import time
 import logging
+import time
+import http
 import requests
+
 
 def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
     """Получение маршрутов от города с кодом code_from в город с code_to."""
@@ -9,14 +11,8 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
     base_url = "https://pass.rzd.ru/timetable/public/ru"
     session = requests.Session()
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-            AppleWebKit/537.36 (KHTML, like Gecko) \
-                Chrome/117.0.0.0 Safari/537.36",
-        "Referer": "https://pass.rzd.ru/",
-        "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Connection": "keep-alive",
-    }
+    file = open("resources/headers.json")
+    headers = json.load(file)
 
     params = {
         "layer_id": 5827,
@@ -29,7 +25,7 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
     }
 
     response = session.get(base_url, params=params, headers=headers)
-    if response.status_code == 200:
+    if response.status_code == http.HTTPStatus.OK:
         try:
             result = response.json().get("result")
             if result == "RID":
@@ -46,14 +42,14 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                     second_url, headers=headers, params=params
                 )
 
-                if second_response.status_code == 200:
+                if response.status_code == http.HTTPStatus.OK:
                     data = second_response.json()
                     logging.info(f"Второй запрос выполнен успешно, JSON: {data}")
                     try:
                         return data
-                    except ValueError:
+                    except Exception as e:
                         logging.error(
-                            f"Ошибка преобразования ответа второго запроса в JSON, статус ошибки: {second_response.status_code}, причина: {second_response.reason}"
+                            f"Ошибка преобразования ответа второго запроса в JSON, статус ошибки: {second_response.status_code}, причина: {second_response.reason}, ошибка: {e}"
                         )
                         logging.debug(second_response.text)
                         return None
@@ -68,7 +64,8 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
             else:
                 return None
         except Exception as e:
-            logging.error("Ошибка преобразования ответа первого запроса в JSON.")
+            logging.error(f"Ошибка преобразования ответа первого запроса в JSON,  \
+                          статус ошибки: {second_response.status_code}, причина: {second_response.reason}, ошибка: {e}")
             logging.debug(response.text)
             return None
     else:
@@ -82,7 +79,7 @@ def get_station_code(station_name):
     """
     Получает код города/станции по названию.
     """
-    with open("./resources/city_codes.json", "r") as file:
+    with open("resources/city_codes.json", "r") as file:
         file = json.load(file)
         ans = file.get(station_name)
         if ans:
