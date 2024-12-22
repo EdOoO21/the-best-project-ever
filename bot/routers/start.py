@@ -1,4 +1,3 @@
-# bot/routers/start.py
 import logging
 from aiogram import Router
 from aiogram.filters import Command
