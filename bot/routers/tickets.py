@@ -7,11 +7,11 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
 from src.db.database import session
+from src.db.queries import get_city_code
 from src.db.models import User, UserStatus
 from src.core.rzd import get_station_code, get_train_routes_with_session
 from bot.keyboards.ticket_options import ticket_options_keyboard
 from bot.keyboards.main_menu import main_menu_keyboard
-
 router = Router()
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,9 @@ def check_date_correctness(date_str: str):
     try:
         date_obj = datetime.strptime(date_str, "%d.%m.%Y")
     except ValueError:
-        return None, "Некорректный формат даты."
+        return None, "Некорректный формат даты. Введите заново."
     if date_obj < datetime.now():
-        return None, "Дата уже прошла, введите будущую дату."
+        return None, "Дата уже прошла, введите будущую дату. Введите заново."
     return date_obj, None
 
 @router.callback_query(F.data == "get_tickets")
@@ -85,7 +85,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
 
     class_data = callback_query.data
     class_map = {
-        "ticket_econom": "Плацкарт",
+        "ticket_econom": "Плацкартный",
         "ticket_business": "Купе",
         "ticket_first": "СВ",
         "ticket_seated": "Сидячий",
@@ -108,17 +108,17 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
         return
 
     try:
-        code_from = get_station_code(origin)
-        code_to = get_station_code(destination)
+        code_from = get_city_code(origin)
+        code_to = get_city_code(destination)
     except ValueError:
         await callback_query.message.answer("Не удалось найти коды станций, попробуйте другие города.")
         await state.clear()
         return
 
-    result_data = get_train_routes_with_session(code_from, code_to, date_str)
+    result_data = get_train_routes_with_session(code_from, code_to, date_str, place_type=class_type_str)
 
     if result_data == "NO TICKETS":
-        await callback_query.message.answer("Билеты не найдены.")
+        await callback_query.message.answer("Билеты по этому маршруту без пересадок не найдены.")
         await state.clear()
         return
 
@@ -130,8 +130,8 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
                 f"Маршрут ID: {route['route_id']}\n"
                 f"Маршрут: {route['station_from']} -> {route['station_to']}\n"
                 f"Глобальный: {route['route_global']}\n"
-                f"Дата: {route['date']}\n"
-                f"Время: {route['time']}\n"
+                f"Время отправления: {route['datetime0']}\n"
+                f"Время прибытия: {route['datetime1']}\n"
                 f"Класс: {route['class']}\n"
                 f"Цена: {route['best_price']} руб.\n\n"
             )

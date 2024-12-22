@@ -2,7 +2,7 @@ import http
 import json
 import logging
 import time
-import datetime
+from datetime import datetime
 
 import requests
 
@@ -87,16 +87,14 @@ def get_parsed_data(result_data, place_type):
 
             for train in trains:
 
-
                 cars = train.get("cars")
 
                 if place_type is not None:
-
                     best_price = None
                     if cars:
                         prices = [c.get("tariff") for c in cars \
                                     if (c.get("tariff") is not None) \
-                                          and (c.get("type") == place_type) \
+                                          and (c.get("typeLoc") == place_type) \
                                             and (c.get("disabledPerson", None) is None)]
                         if prices:
                             best_price = min(prices)
@@ -136,12 +134,12 @@ def get_parsed_data(result_data, place_type):
 
                 route_date = train.get("date0")
 
-                format = "%d.%m.%Y %H: %M"
+                format = "%d.%m.%Y %H:%M"
 
-                date_time0 = f"{train.get("date0")} {train.get("time0")}"
+                date_time0 = f'{train.get("date0")} {train.get("time0")}'
                 date_time0 = datetime.strptime(date_time0, format)
 
-                date_time1 = f"{train.get("date1")} {train.get("time1")}"
+                date_time1 = f'{train.get("date1")} {train.get("time1")}'
                 date_time1 = datetime.strptime(date_time1, format)
 
 
