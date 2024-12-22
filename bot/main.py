@@ -10,7 +10,10 @@ from src.db.database import session
 from src.db.queries import load_cities_from_json
 from src.core.update_db import update as update_db
 
-from bot.routers import start_router, alerts_router, subscriptions_router, tickets_router
+from bot.routers.start import router as start_router
+from bot.routers.subscribtions import router as subscriptions_router
+from bot.routers.alerts import router as alerts_router
+from bot.routers.tickets import router as tickets_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +40,7 @@ async def scheduled_clean():
 
 
 async def main():
-    load_cities_from_json("./sources/city_codes.json")
+    load_cities_from_json("./resources/city_codes.json")
 
     dp.include_router(start_router)
     dp.include_router(alerts_router)

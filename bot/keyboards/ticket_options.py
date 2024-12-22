@@ -4,12 +4,12 @@ def ticket_options_keyboard():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton("Плацкарт", callback_data="ticket_econom"),
-                InlineKeyboardButton("Купе", callback_data="ticket_business"),
+                InlineKeyboardButton(text="Плацкарт", callback_data="ticket_econom"),
+                InlineKeyboardButton(text="Купе", callback_data="ticket_business"),
             ],
             [
-                InlineKeyboardButton("СВ", callback_data="ticket_first"),
-                InlineKeyboardButton("Сидячий", callback_data="ticket_seated"),
+                InlineKeyboardButton(text="СВ", callback_data="ticket_first"),
+                InlineKeyboardButton(text="Сидячий", callback_data="ticket_seated"),
             ],
         ]
     )

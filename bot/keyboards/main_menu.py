@@ -4,17 +4,17 @@ def main_menu_keyboard():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton("Установить оповещение", callback_data="set_alert"),
-                InlineKeyboardButton("Мои оповещения", callback_data="my_alerts"),
+                InlineKeyboardButton(text="Установить оповещение", callback_data="set_alert"),
+                InlineKeyboardButton(text="Мои оповещения", callback_data="my_alerts"),
             ],
             [
-                InlineKeyboardButton("Удалить оповещение", callback_data="delete_alert"),
+                InlineKeyboardButton(text="Удалить оповещение", callback_data="delete_alert"),
             ],
             [
-                InlineKeyboardButton("Получить билеты", callback_data="get_tickets"),
+                InlineKeyboardButton(text="Получить билеты", callback_data="get_tickets"),
             ],
             [
-                InlineKeyboardButton("Мои подписки", callback_data="my_subscriptions"),
+                InlineKeyboardButton(text="Мои подписки", callback_data="my_subscriptions"),
             ],
         ]
     )

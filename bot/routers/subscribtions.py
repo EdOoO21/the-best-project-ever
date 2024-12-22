@@ -9,7 +9,7 @@ from src.db.models import User, UserStatus, Subscription
 from src.db.queries import (
     add_subscription,
     delete_subscription,
-    get_route_by_id,
+    get_route_with_tickets_by_id,
     update_user,
 )
 from bot.keyboards.main_menu import main_menu_keyboard
@@ -122,7 +122,7 @@ async def cb_subscribe_route(callback_query: CallbackQuery):
         reply_markup=main_menu_keyboard()
     )
 
-@router.message(commands={"subscribe"})
+@router.message(F.data == "subscribe")
 async def subscribe_cmd(message: Message):
     user_id = message.from_user.id
     user = session.query(User).filter_by(user_id=user_id).first()
@@ -145,7 +145,7 @@ async def subscribe_cmd(message: Message):
     await message.answer(f"Подписка успешно оформлена! (ID: {route_id})")
 
 
-@router.message(commands={"unsubscribe"})
+@router.message(F.data == "unsubscribe")
 async def unsubscribe_cmd(message: Message):
     user_id = message.from_user.id
     user = session.query(User).filter_by(user_id=user_id).first()
