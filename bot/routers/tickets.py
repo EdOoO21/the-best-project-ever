@@ -116,56 +116,16 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
         return
 
     result_data = get_train_routes_with_session(code_from, code_to, date_str)
-    if not isinstance(result_data, dict):
-        await callback_query.message.answer("Произошла ошибка при запросе маршрутов.")
-        await state.clear()
-        return
 
     if result_data == "NO TICKETS":
         await callback_query.message.answer("Билеты не найдены.")
         await state.clear()
         return
 
-    routes = []
-    try:
-        tp = result_data.get("tp", [])
-        if tp and isinstance(tp, list) and "list" in tp[0]:
-            trains = tp[0]["list"]
-            for idx, train in enumerate(trains, start=1):
-                route_id = train.get("number", f"train_{idx}")
-                station_from = train.get("station0", origin)
-                station_to = train.get("station1", destination)
-                route_date = date_str
-                cars = train.get("cars", [])
-
-                best_price = None
-                if cars:
-                    prices = [c.get("tariff") for c in cars if c.get("tariff") is not None]
-                    if prices:
-                        best_price = min(prices)
-                if best_price is None:
-                    best_price = "нет данных"
-
-                routes.append(
-                    {
-                        "route_id": route_id,
-                        "station_from": station_from,
-                        "station_to": station_to,
-                        "route_global": f"{station_from}-{station_to}",
-                        "time": f"{train.get('time0')} - {train.get('time1')}",
-                        "date": route_date,
-                        "best_price": best_price,
-                        "class": class_type_str,
-                    }
-                )
-    except Exception as e:
-        logger.error(f"Ошибка при обработке данных маршрута: {e}")
-        routes = []
-
-    if not routes:
+    if not result_data:
         await callback_query.message.answer("Билеты не найдены.")
     else:
-        for route in routes:
+        for route in result_data:
             resp = (
                 f"Маршрут ID: {route['route_id']}\n"
                 f"Маршрут: {route['station_from']} -> {route['station_to']}\n"

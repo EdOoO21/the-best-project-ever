@@ -2,11 +2,12 @@ import http
 import json
 import logging
 import time
+import datetime
 
 import requests
 
 
-def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
+def get_train_routes_with_session(code_from, code_to, date, place_type=None,with_seats=True):
     """Получение маршрутов от города с кодом code_from в город с code_to."""
 
     base_url = "https://pass.rzd.ru/timetable/public/ru"
@@ -47,7 +48,7 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                     data = second_response.json()
                     logging.info(f"Второй запрос выполнен успешно, JSON: {data}")
                     try:
-                        return data
+                        return get_parsed_data(data, place_type)
                     except Exception as e:
                         logging.error(
                             f"Ошибка преобразования ответа второго запроса в JSON, статус ошибки: {second_response.status_code}, причина: {second_response.reason}, ошибка: {e}"
@@ -77,6 +78,91 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
         )
         return None
 
+def get_parsed_data(result_data, place_type):
+    try:
+        routes = []
+        tp = result_data.get("tp", [])
+        if tp and isinstance(tp, list) and ("list" in tp[0]):
+            trains = tp[0]["list"]
+
+            for train in trains:
+
+
+                cars = train.get("cars")
+                seat_type = ''
+                if place_type is not None:
+
+                    best_price = None
+                    if cars:
+                        prices = [c.get("tariff") for c in cars \
+                                    if (c.get("tariff") is not None) \
+                                          and (c.get("type") == place_type) \
+                                            and (c.get("disabledPerson", None) is None)]
+                        if prices:
+                            best_price = min(prices)
+                    if best_price is None:
+                        best_price = "нет данных"
+                        continue
+
+                else:
+                    best_price = None
+                    if cars:
+                        for c in cars:
+                            price = c.get("tariff")
+                            if (price is not None) \
+                                    and (c.get("disabledPerson", None) is None):
+
+
+                                if (best_price is None) or (best_price > price):
+                                    best_price = price
+                                    place_type = c.get("type")
+
+
+                    if best_price is None:
+                        best_price = "нет данных"
+                        continue
+
+
+
+                route_id = train.get("number")
+
+                station_from = train.get("station0")
+                station_to = train.get("station1")
+
+                route_from = train.get("route0")
+                route_to = train.get("route1")
+                station_code_from = train.get("code0")
+                station_code_to = train.get("code1")
+
+                route_date = train.get("date0")
+
+                format = "%d.%m.%Y %H: %M"
+
+                date_time0 = f"{train.get("date0")} {train.get("time0")}"
+                date_time0 = datetime.strptime(date_time0, format)
+
+                date_time1 = f"{train.get("date1")} {train.get("time1")}"
+                date_time1 = datetime.strptime(date_time1, format)
+
+
+                routes.append(
+                    {
+                        "route_id": route_id,
+                        "station_from": station_from,
+                        "station_to": station_to,
+                        "station_code_from": station_code_from,
+                        "station_code_to": station_code_to,
+                        "route_global": f"{route_from}-{route_to}",
+                        "datetime0": date_time0,
+                        "datetime1": date_time1,
+                        "best_price": best_price,
+                        "class": place_type,
+                    }
+                )
+        return routes
+    except Exception as e:
+        logging.error(f"Ошибка при обработке данных маршрута: {e}")
+        return None
 
 def get_station_code(station_name):
     """
