@@ -50,18 +50,15 @@ def get_route_with_tickets_by_id(route_id: int) -> dict:
     route = session.query(Route).filter_by(route_id=route_id).first()
     if route:
         result["route_id"] = route.route_id
-        result["from_station"] = (
-            route.from_station.station_id
-        )  # route.from_station.station_name
-        result["to_station"] = (
-            route.to_station.station_id
-        )  # route.to_station.station_name
+        result["from_station"] = route.from_station.station_id
+        result["from_station_city"] = route.from_station.city.city_id
+        result["to_station"] = route.to_station.station_id
+        result["to_station_city"] = route.to_station.city.city_id
         result["from_date"] = route.from_date
         result["to_date"] = route.to_date
         result["train_no"] = route.train_no
 
         # получили по самому последнему по времени обновления билету каждого класса с таким маршрутом
-
         subquery = (
             session.query(
                 Ticket.class_name, func.max(Ticket.update_time).label("max_update_time")
