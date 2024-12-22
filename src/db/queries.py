@@ -1,7 +1,7 @@
 import json
 
-from .database import engine, session
-from .models import (Base, City, Route, Station, Subscription, Ticket,
+from src.db.database import engine, session
+from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
                            User, UserStatus)
 
 
@@ -18,8 +18,8 @@ def load_cities_from_json(file_path: str):
         data = json.load(f)
 
         for city_name in data:
-            city_code = int(data.get(city_name))
-            new_city = City(city_id=city_code, city_name=city_name)
+            city_id = int(data.get(city_name))
+            new_city = City(city_id=city_id, city_name=city_name)
             session.add(new_city)
 
         session.commit()
@@ -41,9 +41,9 @@ def get_route_by_id(route_id: int):
     return session.query(Route).filter_by(route_id=route_id).first()
 
 
-def add_city(city_name: str, city_code: int):
+def add_city(city_name: str, city_id: int):
     """загружаем город"""
-    new_city = City(city_id=city_code, city_name=city_name)
+    new_city = City(city_id=city_id, city_name=city_name)
     session.add(new_city)
     session.commit()
 

@@ -76,3 +76,15 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
             f"Что-то пошло не так при первом запросе, статус ошибки: {response.status_code}, причина: {response.reason}"
         )
         return None
+
+
+def get_station_code(station_name):
+    """
+    Получает код города/станции по названию.
+    """
+    with open("./resources/city_codes.json", "r") as file:
+        file = json.load(file)
+        ans = file.get(station_name)
+        if ans:
+            return ans
+        raise ValueError("Город/станция не найдены")
