@@ -1,8 +1,8 @@
 import json
-
+from sqlalchemy import func
 from src.db.database import engine, session
 from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
-                           User, UserStatus)
+                           User, UserStatus, TicketType)
 
 
 def create_tables():
@@ -26,19 +26,51 @@ def load_cities_from_json(file_path: str):
 
 
 def get_routes_subscribed():
-    # ТУДУ добавить (айди, плюс достать старую стоимость)
     """получаем список уникальных айди маршрутов, которые находятся в таблице подписок"""
-    try:
-        result = session.query(Subscription.route_id).distinct().all()
-        subscribed_routes_info = {}
-        return [route_id[0] for route_id in result]
-    except Exception:
-        return []
+    routes = session.query(Subscription.route_id).distinct().all()
+    if routes:
+        return [route_id[0] for route_id in routes]
+    return []
 
 
-def get_route_by_id(route_id: int):
-    """получаем маршрут по его айди"""
-    return session.query(Route).filter_by(route_id=route_id).first()
+def get_route_with_tickets_by_id(route_id: int) -> dict:
+    """получаем маршрут (его данные + последнюю стоимость из собранных "билетов") по его айди"""
+    result = {
+        "route_id": None, 
+        "from_station": None, 
+        "to_station": None, 
+        "from_date": None, 
+        "to_date": None,
+        "train_no": None, 
+        "tickets": {}, 
+        }
+
+    route = session.query(Route).filter_by(route_id=route_id).first()
+    if route:
+        result["route_id"] = route.route_id
+        result["from_station"] = route.from_station.station_id  # route.from_station.station_name
+        result["to_station"] = route.to_station.station_id  # route.to_station.station_name
+        result["from_date"] = route.from_date
+        result["to_date"] = route.to_date
+        result["train_no"] = route.train_no
+
+        # получили по самому последнему по времени обновления билету каждого класса с таким маршрутом
+
+        subquery = (
+            session.query(Ticket.class_name,func.max(Ticket.update_time).label('max_update_time'))
+            .filter(Ticket.route_id == route_id).group_by(Ticket.class_name)
+            ).subquery()
+
+        tickets = (
+            session.query(Ticket)
+            .join(subquery, (Ticket.class_name == subquery.c.class_name) & (Ticket.update_time == subquery.c.max_update_time))
+        ).all()
+
+        if tickets:
+            for ticket in tickets:
+                result["tickets"][ticket.class_name.value] = ticket.best_price
+
+    return result
 
 
 def add_city(city_name: str, city_id: int):
@@ -140,7 +172,7 @@ def delete_subscription(user_id: int, route_id: int):
         session.commit()
 
 
-def add_ticket(route_id: int, class_name: str, best_price: int):
+def add_ticket(route_id: int, class_name: TicketType, best_price: int):
     """добавляем новую информацию по самому выгодному билету"""
     new_ticket = Ticket(route_id=route_id, class_name=class_name, best_price=best_price)
     # время добавления записи проставится автоматически см. models.Ticket

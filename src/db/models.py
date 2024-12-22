@@ -80,6 +80,9 @@ class Route(Base):
         order_by="Ticket.best_price.asc()",
     )
 
+    def __str__(self) -> str:
+        return f"route_id {self.route_id}: {self.from_station.station_name} {self.from_date} -> {self.to_station.station_name} {self.to_date}"
+
 
 class UserStatus(enum.Enum):
     banned = "banned"
@@ -143,5 +146,9 @@ class Ticket(Base):
         "Route", back_populates="tickets", foreign_keys="Ticket.route_id"
     )
 
+    
+    def __str__(self):
+        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
+
     def __repr__(self):
-        return f"ticket no {self.ticket_id}, for route no {self.route_id}, {self.class_name}, {self.best_price} rub, updated: {self.update_time} "
+        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"

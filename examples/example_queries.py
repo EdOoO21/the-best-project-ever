@@ -1,9 +1,10 @@
 from datetime import datetime
+from pprint import pprint
 
 import src.db.queries as q
 
 q.create_tables()
-q.load_cities_from_json("./docs/city_codes.json")
+q.load_cities_from_json("resources/city_codes.json")
 
 # перед добавлением маршрута в базу ВСЕГДА надо сначала проверить, что станции есть в базе, и если нет, то добавить (инфу из апи)
 # надо еще подумать как это по красивому делать. через flush ли?
@@ -16,7 +17,7 @@ added_route_id = q.add_route(
     from_date=datetime(2024, 6, 19, 9, 14, 10),
     to_station_id=3933,
     to_date=datetime(2024, 7, 23, 7, 34, 11),
-    train_no=None,
+    train_no="ЪЫЪ",
 )
 
 q.add_user(user_id=19999)
@@ -25,7 +26,8 @@ q.add_subscription(user_id=19999, route_id=added_route_id)
 print(*q.get_routes_subscribed())  # >> 1  как раз маршрут добавленный с номером 1
 
 
-q.add_ticket(added_route_id, q.TicketType.cupe, 8881313)
+q.add_ticket(added_route_id, q.TicketType.cupe, 888131377)
 
+print("---", *[ticket for ticket in q.session.query(q.Ticket).distinct().all()])
 
-print([ticket for ticket in q.session.query(q.Ticket).distinct().all()])
+pprint(q.get_route_with_tickets_by_id(added_route_id))
