@@ -13,10 +13,9 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton,
                            InlineKeyboardMarkup, Message)
 from dotenv import load_dotenv
 
-from core.rzd import (get_station_code,
-                                              get_train_routes_with_session)
-from core.update_db import update as update_db
-from src.db.database import session
+from src.core.rzd import get_train_routes_with_session
+from src.core.update_db import update as update_db
+from src.db import session
 from src.db.models import (City, Route, Station, Subscription, TicketType,
                            User, UserStatus)
 from src.db.queries import (add_route, add_subscription, add_user,

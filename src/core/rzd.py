@@ -1,11 +1,10 @@
 import json
 import time
-
+import logging
 import requests
 
-
 def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
-    """Получение маршрутов от города с кодом code_from в город сcode_to."""
+    """Получение маршрутов от города с кодом code_from в город с code_to."""
 
     base_url = "https://pass.rzd.ru/timetable/public/ru"
     session = requests.Session()
@@ -26,7 +25,7 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
         "checkSeats": 1 if with_seats else 0,
         "code0": code_from,
         "code1": code_to,
-        "dt0": "24.12.2024",
+        "dt0": date,
     }
 
     response = session.get(base_url, params=params, headers=headers)
@@ -38,7 +37,7 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
                 data = response.json()
                 rid = data.get("RID")
 
-                print(f"Первый запрос выполнен успешно, JSON: {data}")
+                logging.info(f"Первый запрос выполнен успешно, JSON: {data}")
 
                 time.sleep(3)
 
@@ -49,47 +48,31 @@ def get_train_routes_with_session(code_from, code_to, date, with_seats=True):
 
                 if second_response.status_code == 200:
                     data = second_response.json()
-                    print(f"Второй запрос выполнен успешно, JSON: {data}")
+                    logging.info(f"Второй запрос выполнен успешно, JSON: {data}")
                     try:
                         return data
                     except ValueError:
-                        print(
-                            "Ошибка преобразования \
-                                ответа второго запроса в JSON."
+                        logging.error(
+                            f"Ошибка преобразования ответа второго запроса в JSON, статус ошибки: {second_response.status_code}, причина: {second_response.reason}"
                         )
-                        print(second_response.text)
+                        logging.debug(second_response.text)
                         return None
                 else:
-                    print(
-                        f"Что-то пошло не так при втором запросе, \
-                                статус ошибки:: {second_response.status_code},\
-                                        причина: {second_response.reason}"
+                    logging.error(
+                        f"Что-то пошло не так при втором запросе, статус ошибки: {second_response.status_code}, причина: {second_response.reason}"
                     )
                     return None
             elif result == "OK":
-                data = response.json()
+                logging.info("Нет доступных билетов.")
                 return "NO TICKETS"
             else:
                 return None
         except Exception as e:
-            print("Ошибка преобразования ответа первого запроса в JSON.")
-            print(response.text)
+            logging.error("Ошибка преобразования ответа первого запроса в JSON.")
+            logging.debug(response.text)
             return None
     else:
-        print(
-            f"Что-то пошло не так при первом запросе, статус ошибки: \
-                {response.status_code}\nПричина: {response.reason}"
+        logging.error(
+            f"Что-то пошло не так при первом запросе, статус ошибки: {response.status_code}, причина: {response.reason}"
         )
         return None
-
-
-def get_station_code(station_name):
-    """
-    Получает код города/станции по названию.
-    """
-    with open("./resources/city_codes.json", "r") as file:
-        file = json.load(file)
-        ans = file.get(station_name)
-        if ans:
-            return ans
-        raise ValueError("Город/станция не найдены")

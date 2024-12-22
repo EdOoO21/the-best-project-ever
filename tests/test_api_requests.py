@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
-from core.rzd import (get_station_code,
-                                              get_train_routes_with_session)
+from src.core.rzd import get_train_routes_with_session
 
 
 def test_get_train_routes_with_seats():
@@ -28,16 +27,6 @@ def test_get_train_routes_without_seats():
     assert (
         isinstance(result, dict) or result == "NO TICKETS"
     ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
-
-
-def test_get_station_code_success():
-    """Тест на получение кода станции"""
-
-    assert get_station_code("москва") == "2000000"
-    assert get_station_code("санкт-петербург") == "2004000"
-    assert get_station_code("бобров") == "2014522"
-    assert get_station_code("кораблино") == "2000090"
-    assert get_station_code("яя") == "2028022"
 
 
 def test_get_train_routes_with_seats_get_codes():

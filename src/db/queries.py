@@ -1,7 +1,7 @@
 import json
 
-from src.db.database import engine, session
-from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
+from .database import engine, session
+from .models import (Base, City, Route, Station, Subscription, Ticket,
                            User, UserStatus)
 
 
