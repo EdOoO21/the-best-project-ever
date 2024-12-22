@@ -89,7 +89,7 @@ def get_parsed_data(result_data, place_type):
 
 
                 cars = train.get("cars")
-                seat_type = ''
+
                 if place_type is not None:
 
                     best_price = None
