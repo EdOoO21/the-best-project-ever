@@ -31,3 +31,7 @@ q.add_ticket(added_route_id, q.TicketType.cupe, 888131377)
 print("---", *[ticket for ticket in q.session.query(q.Ticket).distinct().all()])
 
 pprint(q.get_route_with_tickets_by_id(added_route_id))
+
+print(q.get_city_code("красноярск")) # >> 2038001 урааа
+print(q.get_city_code("Краснодар")) # >> 2038001 урааа
+

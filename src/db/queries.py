@@ -26,6 +26,24 @@ def load_cities_from_json(file_path: str):
 
         session.commit()
 
+def get_city_code(city_name):
+    """получает код города по названию"""
+    city_name = city_name.lower()
+
+    city_precise = session.query(City).filter(City.city_name == city_name).first()
+
+    # сначала точное совпадение
+    if city_precise:
+        return city_precise.city_id  
+    
+    city = session.query(City).filter(City.city_name.like(f"{city_name}%")).order_by(City.city_name.asc()).first()
+
+    # если нет точного совпадения, то берем первый по алфавиту из похожих
+    if city:
+        return city.city_id
+    
+    raise ValueError("Город/станция не найдены")
+
 
 def get_routes_subscribed():
     """получаем список уникальных айди маршрутов, которые находятся в таблице подписок"""
