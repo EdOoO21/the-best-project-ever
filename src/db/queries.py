@@ -75,6 +75,19 @@ def get_routes_subscribed() -> list:
         return [route_id[0] for route_id in routes]
     return []
 
+def get_user_subscrtions(user_id: int) -> list:
+    """получаем список подписок пользователя"""
+    result = []
+
+    user = session.query(User).filter_by(user_id=user_id).first()
+    subscription = user.subscriptions
+    if subscription:
+        for sub in subscription:
+            result.append(get_route_with_tickets_by_id(sub.route_id))
+        return result
+    return []
+
+
 def get_route_with_tickets_by_id(route_id: int) -> dict:
     """получаем маршрут (его данные + последнюю стоимость из собранных "билетов") по его айди"""
     result = {
