@@ -157,13 +157,14 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
             f"Отправление: {route['datetime0']}\n"
             f"Прибытие: {route['datetime1']}\n"
             f"Класс: {route['class']}\n"
+            f"Свободных мест: {route['freeseats']}\n"
             f"Цена: {route['best_price']} руб.\n"
         )
         await callback_query.message.answer(
             resp,
             reply_markup=subscribe_button(index)
         )
-    
+
     await callback_query.message.answer(
         "Нажмите «Подписаться» для интересующего вас маршрута."
     )
