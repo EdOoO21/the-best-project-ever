@@ -26,6 +26,11 @@ def load_cities_from_json(file_path: str):
 
         session.commit()
 
+def get_users_subscribed_to_route(route_id: int) -> list[int]:
+    """Возвращает список user_id, которые подписаны на указанный маршрут"""
+    subscriptions = session.query(Subscription).filter_by(route_id=route_id).all()
+    return [sub.user_id for sub in subscriptions]
+
 def check_user_is_banned(user_id: int) -> bool | None:
     """проверяем статус пользователя"""
     user = session.query(User).filter(User.user_id == user_id).first()

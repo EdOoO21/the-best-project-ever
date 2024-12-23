@@ -11,7 +11,7 @@ def main_menu_keyboard():
                 InlineKeyboardButton(text="Мои оповещения", callback_data="my_alerts"),
             ],
             [
-                InlineKeyboardButton(text="Установить оповещение", callback_data="set_alert"),
+                InlineKeyboardButton(text="Удалить оповещение", callback_data="delete_alert"),
             ],
         ]
     )

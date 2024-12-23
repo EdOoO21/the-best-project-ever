@@ -15,10 +15,6 @@ logger = logging.getLogger(__name__)
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     user = session.query(User).filter_by(user_id=user_id).first()
-    if user and user.status == UserStatus.banned:
-        await message.answer("Вы заблокированы и не можете использовать этого бота.")
-        logger.info(f"Заблокированный пользователь {user_id} попытался использовать бота.")
-        return
 
     if not user:
         add_user(user_id)

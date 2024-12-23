@@ -11,7 +11,10 @@ from src.db.queries import (
     get_city_code,
     add_subscription,
     add_route,
-    add_station
+    add_station,
+    check_user_is_banned,
+    get_user_subscrtions,
+    add_ticket
 
 )
 from src.db.models import User, UserStatus
@@ -33,8 +36,7 @@ class TicketSearchForm(StatesGroup):
 
 def check_date_correctness(date_str: str):
     """
-    Проверяет, что дата в формате ДД.ММ.ГГГГ и она не в прошлом.
-    Возвращает (datetime_obj, None) либо (None, error_message).
+    Проверяет, что дата в формате ДД.ММ.ГГГГ и она не в прошлом
     """
     try:
         date_obj = datetime.strptime(date_str, "%d.%m.%Y")
@@ -48,11 +50,10 @@ def check_date_correctness(date_str: str):
 @router.callback_query(F.data == "get_tickets")
 async def cb_get_tickets(callback_query: CallbackQuery, state: FSMContext):
     """
-    Нажали кнопку «Получить билеты».
+    Нажали кнопку получить билеты
     """
     user_id = callback_query.from_user.id
-    user = session.query(User).filter_by(user_id=user_id).first()
-    if user and user.status == UserStatus.banned:
+    if check_user_is_banned(user_id):
         await callback_query.answer("Вы заблокированы.")
         return
 
@@ -96,8 +97,7 @@ async def process_ticket_date(message: Message, state: FSMContext):
 )
 async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
-    user = session.query(User).filter_by(user_id=user_id).first()
-    if user and user.status == UserStatus.banned:
+    if check_user_is_banned(user_id):
         await callback_query.answer("Вы заблокированы.")
         return
 
@@ -151,7 +151,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
     for index, route in enumerate(result_data):
         resp = (
             f"Маршрут №{index + 1}\n"
-            f"ID (логический): {route['route_id']}\n"
+            f"ID: {route['route_id']}\n"
             f"{route['station_from']} -> {route['station_to']}\n"
             f"Отправление: {route['datetime0']}\n"
             f"Прибытие: {route['datetime1']}\n"
@@ -167,28 +167,23 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
     await callback_query.message.answer(
         "Нажмите «Подписаться» для интересующего вас маршрута."
     )
+    await callback_query.answer(reply_markup=main_menu_keyboard())
 
 
 @router.callback_query(F.data.startswith("subscribe_"))
 async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
 
     """
-    Когда пользователь нажимает «Подписаться» на конкретный маршрут (по индексу).
+    Когда пользователь нажимает «Подписаться» на конкретный маршрут
     """
     user_id = callback_query.from_user.id
-    user = session.query(User).filter_by(user_id=user_id).first()
-    if user and user.status == UserStatus.banned:
+    if check_user_is_banned(user_id):
         await callback_query.answer("Вы заблокированы.")
         return
-    print('\n'*6)
     data_parts = callback_query.data.split("_")
     print(data_parts)
-    print('^_^* \n \n')
-    print('^_^! \n \n')
     stored_data = await state.get_data()
-    print('^_^!! \n \n')
     routes = stored_data.get("searched_routes")
-    print('^_^!!! \n \n')
     route_info = routes[int(data_parts[1])]
 
     from_station_name = route_info["station_from"]
@@ -199,13 +194,13 @@ async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
     class_name = route_info["class"]
     city_from = route_info["from"]
     city_from_code = route_info["fromCode"]
-    city_where = route_info["where"]
-    city_where_code = route_info["whereCode"]
     station_code_from = route_info["station_code_from"]
     station_code_to = route_info["station_code_to"]
-    print('-'*40)
+    city_where_code = route_info["whereCode"]
+
     add_station(city_from_code,station_code_from,from_station_name)
     add_station(city_where_code,station_code_to, to_station_name)
+
     route_id_db = add_route(
         from_station_id=station_code_from,
         to_station_id=station_code_to,
@@ -215,10 +210,11 @@ async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
         class_name=class_name.lower()
     )
     add_subscription(user_id, route_id_db)
+    add_ticket(route_id_db,route_info['best_price'])
 
     await callback_query.message.answer(
-        f"Вы подписались на маршрут #{route_id_db} "
+        f"Вы подписались на маршрут \n"
         f"({from_station_name} -> {to_station_name})."
     )
 
-    await callback_query.answer()
+    await callback_query.answer( reply_markup=main_menu_keyboard())

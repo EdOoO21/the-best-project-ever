@@ -11,8 +11,7 @@ from src.db.queries import load_cities_from_json
 from src.core.update_db import update as update_db
 
 from bot.routers.start import router as start_router
-#from bot.routers.subscribtions import router as subscriptions_router
-#from bot.routers.alerts import router as alerts_router
+from bot.alerts import router as alerts_router
 from bot.routers.tickets import router as tickets_router
 
 logging.basicConfig(level=logging.INFO)
@@ -42,8 +41,7 @@ async def main():
     load_cities_from_json("./resources/city_codes.json")
 
     dp.include_router(start_router)
-#    dp.include_router(alerts_router)
-#    dp.include_router(subscriptions_router)
+    dp.include_router(alerts_router)
     dp.include_router(tickets_router)
 
     asyncio.create_task(scheduled_clean())

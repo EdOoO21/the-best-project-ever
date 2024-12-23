@@ -1,8 +1,9 @@
 from src.core.rzd import get_train_routes_with_session
 from src.db.queries import get_route_with_tickets_by_id, get_routes_subscribed, delete_unvalid_routes
 from datetime import datetime
+from bot.utils import notify_price_change
 
-def update():
+async def update():
     delete_unvalid_routes()
     subscribed = get_routes_subscribed()
     for route_id in subscribed:
@@ -20,4 +21,6 @@ def update():
             and route["datetime1"] == obj["to_date"]:
 
                 if obj["best_price"] != route["best_price"]:
-                    pass
+                        old_price = obj["best_price"]
+                        new_price = route["best_price"] 
+                        await notify_price_change(bot, route_id, old_price, new_price)
