@@ -89,26 +89,23 @@ def get_parsed_data(result_data, place_type):
             for train in trains:
 
                 cars = train.get("cars")
-
+                freeseats = None
                 if place_type is not None:
                     best_price = None
-                    freeseats = None
                     if cars:
-                        for c in cars:
-                            if (c.get("tariff") is not None) \
-                                    and (c.get("typeLoc") == place_type) \
-                                        and (c.get("disabledPerson", None) is None):
-                                if (best_price and (c.get("tariff") < best_price)) and (c.get("freeSeats") != 0):
-                                    best_price = c.get("tariff")
-                                    freeseats = c.get("freeSeats")
-
+                        prices = [c.get("tariff") for c in cars \
+                                    if (c.get("tariff") is not None) \
+                                          and (c.get("typeLoc") == place_type) \
+                                            and (c.get("disabledPerson", None) is None)]
+                        if prices:
+                            best_price = min(prices)
+                            freeseats = cars[prices.index(best_price)].get("freeSeats")
                     if best_price is None:
                         best_price = "нет данных"
                         continue
 
                 else:
                     best_price = None
-                    freeseats = None
                     if cars:
                         for c in cars:
                             price = c.get("tariff")
@@ -116,7 +113,7 @@ def get_parsed_data(result_data, place_type):
                                     and (c.get("disabledPerson", None) is None):
 
 
-                                if ((best_price is None) or (best_price > price)) and (c.get("freeSeats") != 0):
+                                if ((best_price is None) or (best_price > price)):
                                     best_price = price
                                     place_type = c.get("type")
                                     freeseats = c.get("freeSeats")
@@ -141,7 +138,6 @@ def get_parsed_data(result_data, place_type):
                 route_to = train.get("route1")
                 station_code_from = train.get("code0")
                 station_code_to = train.get("code1")
-
 
 
                 format = "%d.%m.%Y %H:%M"
@@ -169,7 +165,7 @@ def get_parsed_data(result_data, place_type):
                         "fromCode": city_from_code,
                         "where": city_where,
                         "whereCode": city_where_code,
-                        "freeseats": freeseats,
+                        "frseats": freeseats,
                     }
                 )
         return routes

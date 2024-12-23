@@ -157,7 +157,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
             f"Отправление: {route['datetime0']}\n"
             f"Прибытие: {route['datetime1']}\n"
             f"Класс: {route['class']}\n"
-            f"Свободных мест: {route['freeseats']}\n"
+            f"Свободные места: {route['frseats']}\n"
             f"Цена: {route['best_price']} руб.\n"
         )
         await callback_query.message.answer(
@@ -165,61 +165,3 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
             reply_markup=subscribe_button(index)
         )
 
-    await callback_query.message.answer(
-        "Нажмите «Подписаться» для интересующего вас маршрута."
-    )
-
-
-@router.callback_query(F.data.startswith("subscribe_"))
-async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
-
-    """
-    Когда пользователь нажимает «Подписаться» на конкретный маршрут (по индексу).
-    """
-    user_id = callback_query.from_user.id
-    user = session.query(User).filter_by(user_id=user_id).first()
-    if user and user.status == UserStatus.banned:
-        await callback_query.answer("Вы заблокированы.")
-        return
-    print('\n'*6)
-    data_parts = callback_query.data.split("_")
-    print(data_parts)
-    print('^_^* \n \n')
-    print('^_^! \n \n')
-    stored_data = await state.get_data()
-    print('^_^!! \n \n')
-    routes = stored_data.get("searched_routes")
-    print('^_^!!! \n \n')
-    route_info = routes[int(data_parts[1])]
-
-    from_station_name = route_info["station_from"]
-    to_station_name = route_info["station_to"]
-    from_date = route_info["datetime0"]
-    to_date = route_info["datetime1"]
-    train_no = route_info["route_id"]
-    class_name = route_info["class"]
-    city_from = route_info["from"]
-    city_from_code = route_info["fromCode"]
-    city_where = route_info["where"]
-    city_where_code = route_info["whereCode"]
-    station_code_from = route_info["station_code_from"]
-    station_code_to = route_info["station_code_to"]
-    print('-'*40)
-    add_station(city_from_code,station_code_from,from_station_name)
-    add_station(city_where_code,station_code_to, to_station_name)
-    route_id_db = add_route(
-        from_station_id=station_code_from,
-        to_station_id=station_code_to,
-        from_date=from_date,
-        to_date=to_date,
-        train_no=train_no,
-        class_name=class_name.lower()
-    )
-    add_subscription(user_id, route_id_db)
-
-    await callback_query.message.answer(
-        f"Вы подписались на маршрут #{route_id_db} "
-        f"({from_station_name} -> {to_station_name})."
-    )
-
-    await callback_query.answer()
