@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 FORBIDDEN_WORDS = []
 try:
-    with open("input.txt", "r", encoding="utf-8") as f:
+    with open("./resources/forbidden_words.txt", "r") as f:
         for line in f:
             words = [word.strip() for word in line.rstrip().split(",")]
             FORBIDDEN_WORDS.extend(words)
@@ -183,8 +183,13 @@ async def process_alert_class(callback_query: CallbackQuery, state: FSMContext):
         to_date=date_obj,
         train_no=None,
     )
+    await state.update_data(new_route_id=route_id)
 
-    add_subscription(user_id, route_id)
+    await callback_query.message.answer(
+        f"Маршрут ID {route_id} создан!\nХотите ли вы подписаться на этот маршрут?",
+        reply_markup=yes_no_button()
+    )
+
 
     await callback_query.message.answer(
         f"Оповещение успешно установлено! (ID маршрута: {route_id})",
