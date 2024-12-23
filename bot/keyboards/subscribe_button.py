@@ -1,16 +1,5 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-
-def yes_no_button():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="Да", callback_data="set_subscription"),
-                InlineKeyboardButton(text="Нет", callback_data="no_subscribtion")
-            ]
-        ]
-    )
-
 def subscribe_button(index : int):
     return InlineKeyboardMarkup(
         inline_keyboard=[

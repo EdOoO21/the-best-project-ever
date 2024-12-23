@@ -33,10 +33,9 @@ dp = Dispatcher(storage=MemoryStorage())
 
 async def scheduled_clean():
     while True:
-        # Например, обновляем базу, чистим старые записи, билеты
         update_db()
         logger.info("Периодическое обновление базы данных выполнено.")
-        await asyncio.sleep(86400)  # раз в сутки
+        await asyncio.sleep(86400)
 
 
 async def main():
