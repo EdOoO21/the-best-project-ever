@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: b98199032fa5
-Revises: 3ed67b5b2bec
-Create Date: 2024-12-23 00:29:21.498619
+Revision ID: 740ae24ba721
+Revises: 
+Create Date: 2024-12-23 06:14:42.121181
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b98199032fa5'
-down_revision: Union[str, None] = '3ed67b5b2bec'
+revision: str = '740ae24ba721'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -44,6 +44,7 @@ def upgrade() -> None:
     sa.Column('to_station_id', sa.Integer(), nullable=False),
     sa.Column('to_date', sa.DateTime(), nullable=False),
     sa.Column('train_no', sa.String(length=25), nullable=True),
+    sa.Column('class_name', sa.Enum('plackart', 'cupe', 'seated', 'sv', name='routetype'), nullable=False),
     sa.ForeignKeyConstraint(['from_station_id'], ['t_station.station_id'], ),
     sa.ForeignKeyConstraint(['to_station_id'], ['t_station.station_id'], ),
     sa.PrimaryKeyConstraint('route_id')
@@ -58,7 +59,6 @@ def upgrade() -> None:
     op.create_table('t_ticket',
     sa.Column('ticket_id', sa.Integer(), nullable=False),
     sa.Column('route_id', sa.Integer(), nullable=False),
-    sa.Column('class_name', sa.Enum('plackart', 'cupe', 'seated', 'sv', name='tickettype'), nullable=False),
     sa.Column('best_price', sa.Integer(), nullable=False),
     sa.Column('update_time', sa.DateTime(), server_default=sa.text("TIMEZONE('utc', now())"), nullable=False),
     sa.ForeignKeyConstraint(['route_id'], ['t_route.route_id'], ),

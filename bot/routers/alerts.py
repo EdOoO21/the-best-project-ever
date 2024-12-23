@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
 from src.db.database import session
-from src.db.models import User, UserStatus, City, Station, Route, TicketType
+from src.db.models import User, UserStatus, City, Station, Route, Ticket
 from src.db.queries import add_subscription, add_route, add_user, update_user, delete_subscription
 from src.db.queries import load_cities_from_json
 from src.core.rzd import get_station_code
