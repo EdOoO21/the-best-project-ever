@@ -123,11 +123,6 @@ class Subscription(Base):
     user_id = Column(Integer, ForeignKey("t_user.user_id"), primary_key=True)
     route_id = Column(Integer, ForeignKey("t_route.route_id"), primary_key=True)
 
-    # связь с юзерами - юзер, который следит за этим маршрутом
-    user = relationship("User", back_populates="subscriptions")
-    # связь с маршрутами - маршут, за которым следит юзер
-    route = relationship("Route", back_populates="users")
-
 
 class Ticket(Base):
     """табличка со стоимостью билетов для маршрутов"""

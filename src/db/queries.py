@@ -56,7 +56,7 @@ def delete_unvalid_routes():
     routes = session.query(Route).filter(Route.from_date >= text("TIMEZONE('utc', now())")).all()
     if routes:
         # удаляем все подписки с прошедшедшими датами, а также все маршруты из этих подписок
-        session.query(Subscription).filter(Subscription.route.route_id in [route.route_id for route in routes]).delete(
+        session.query(Subscription).filter(Subscription.route_id in [route.route_id for route in routes]).delete(
             synchronize_session=False
         )
         # удаляем все билеты с прошедшедшими датами, а также все маршруты из этих подписок
