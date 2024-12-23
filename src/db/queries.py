@@ -131,7 +131,7 @@ def add_route(
     class_name: str,
 ) -> int:
     """добавляем новый маршрут"""
-    if class_name == "плацкарт":
+    if class_name == "плацкартный":
         class_name = RouteType.plackart
     elif class_name == "купе":
         class_name = RouteType.cupe
