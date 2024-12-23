@@ -47,6 +47,7 @@ class Station(Base):
 
 class RouteType(enum.Enum):
     """я хз как это на английский переводится вот честное слово)))"""
+
     plackart = "плацкарт"
     cupe = "купе"
     seated = "сидячий"

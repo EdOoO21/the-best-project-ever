@@ -1,27 +1,21 @@
 import logging
 import re
 from datetime import datetime
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
-from aiogram.fsm.state import State, StatesGroup
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, Message
 
-from src.db.database import session
-from src.db.queries import (
-    get_city_code,
-    add_subscription,
-    add_route,
-    add_station,
-    check_user_is_banned,
-    get_user_subscrtions,
-    add_ticket
-
-)
-from src.db.models import User, UserStatus
-from src.core.rzd import get_train_routes_with_session
-from bot.keyboards.ticket_options import ticket_options_keyboard
 from bot.keyboards.main_menu import main_menu_keyboard
 from bot.keyboards.subscribe_button import subscribe_button
+from bot.keyboards.ticket_options import ticket_options_keyboard
+from src.core.rzd import get_train_routes_with_session
+from src.db.database import session
+from src.db.models import User, UserStatus
+from src.db.queries import (add_route, add_station, add_subscription,
+                            add_ticket, check_user_is_banned, get_city_code,
+                            get_user_subscrtions)
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -88,7 +82,9 @@ async def process_ticket_date(message: Message, state: FSMContext):
 
     await state.update_data(date=text)
     await state.set_state(TicketSearchForm.class_type)
-    await message.answer("Выберите класс билета:", reply_markup=ticket_options_keyboard())
+    await message.answer(
+        "Выберите класс билета:", reply_markup=ticket_options_keyboard()
+    )
 
 
 @router.callback_query(
@@ -117,7 +113,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
     data = await state.get_data()
     origin = data["origin"]
     destination = data["destination"]
-    date_str = data["date"]    
+    date_str = data["date"]
     date_obj, error = check_date_correctness(date_str)
     if error:
         await callback_query.message.answer(error)
@@ -128,7 +124,9 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
         code_from = get_city_code(origin)
         code_to = get_city_code(destination)
     except ValueError:
-        await callback_query.message.answer("Не удалось найти коды станций, попробуйте другие города.")
+        await callback_query.message.answer(
+            "Не удалось найти коды станций, попробуйте другие города."
+        )
         await state.clear()
         return
 
@@ -159,10 +157,7 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
             f"Свободные места: {route['frseats']}\n"
             f"Цена: {route['best_price']} руб.\n"
         )
-        await callback_query.message.answer(
-            resp,
-            reply_markup=subscribe_button(index)
-        )
+        await callback_query.message.answer(resp, reply_markup=subscribe_button(index))
 
     await callback_query.message.answer(
         "Нажмите «Подписаться» для интересующего вас маршрута."
@@ -172,7 +167,6 @@ async def process_ticket_class(callback_query: CallbackQuery, state: FSMContext)
 
 @router.callback_query(F.data.startswith("subscribe_"))
 async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
-
     """
     Когда пользователь нажимает «Подписаться» на конкретный маршрут
     """
@@ -198,8 +192,8 @@ async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
     station_code_to = route_info["station_code_to"]
     city_where_code = route_info["whereCode"]
 
-    add_station(city_from_code,station_code_from,from_station_name)
-    add_station(city_where_code,station_code_to, to_station_name)
+    add_station(city_from_code, station_code_from, from_station_name)
+    add_station(city_where_code, station_code_to, to_station_name)
 
     route_id_db = add_route(
         from_station_id=station_code_from,
@@ -207,14 +201,13 @@ async def cb_subscribe_route(callback_query: CallbackQuery, state: FSMContext):
         from_date=from_date,
         to_date=to_date,
         train_no=train_no,
-        class_name=class_name.lower()
+        class_name=class_name.lower(),
     )
     add_subscription(user_id, route_id_db)
-    add_ticket(route_id_db,route_info['best_price'])
+    add_ticket(route_id_db, route_info["best_price"])
 
     await callback_query.message.answer(
-        f"Вы подписались на маршрут \n"
-        f"({from_station_name} -> {to_station_name})."
+        f"Вы подписались на маршрут \n" f"({from_station_name} -> {to_station_name})."
     )
 
-    await callback_query.answer( reply_markup=main_menu_keyboard())
+    await callback_query.answer(reply_markup=main_menu_keyboard())

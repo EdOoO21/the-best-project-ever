@@ -1,15 +1,17 @@
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from bot.keyboards.main_menu import main_menu_keyboard
 from src.db.database import session
 from src.db.models import User, UserStatus
 from src.db.queries import add_user
-from bot.keyboards.main_menu import main_menu_keyboard
 
 router = Router()
 logger = logging.getLogger(__name__)
+
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):

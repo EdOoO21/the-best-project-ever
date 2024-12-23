@@ -1,9 +1,11 @@
 import logging
+
 from aiogram import Bot
 
-from src.db.queries import get_users_subscribed_to_route, get_route_with_tickets_by_id
-from src.db.models import Route
 from src.db.database import session
+from src.db.models import Route
+from src.db.queries import (get_route_with_tickets_by_id,
+                            get_users_subscribed_to_route)
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +44,16 @@ async def notify_price_change(bot: Bot, route_id: int, old_price: int, new_price
 
     user_ids = get_users_subscribed_to_route(route_id)
     if not user_ids:
-        logger.info(f"Нет подписчиков у route_id={route_id}, сообщение никому не отправляем.")
+        logger.info(
+            f"Нет подписчиков у route_id={route_id}, сообщение никому не отправляем."
+        )
         return
 
     for uid in user_ids:
         try:
             await bot.send_message(chat_id=uid, text=text_msg)
-            logger.info(f"Уведомление отправлено user_id={uid} по маршруту #{route_id}.")
+            logger.info(
+                f"Уведомление отправлено user_id={uid} по маршруту #{route_id}."
+            )
         except Exception as e:
             logger.error(f"Не удалось отправить уведомление user_id={uid}: {e}")

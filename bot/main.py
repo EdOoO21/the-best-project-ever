@@ -6,13 +6,12 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from dotenv import load_dotenv
 
+from bot.alerts import router as alerts_router
+from bot.routers.start import router as start_router
+from bot.routers.tickets import router as tickets_router
+from src.core.update_db import update as update_db
 from src.db.database import session
 from src.db.queries import load_cities_from_json
-from src.core.update_db import update as update_db
-
-from bot.routers.start import router as start_router
-from bot.alerts import router as alerts_router
-from bot.routers.tickets import router as tickets_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

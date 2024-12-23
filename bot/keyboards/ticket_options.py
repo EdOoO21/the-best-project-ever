@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+
 def ticket_options_keyboard():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[

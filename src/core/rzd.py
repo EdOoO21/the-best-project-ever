@@ -7,7 +7,13 @@ from datetime import datetime
 import requests
 
 
-def get_train_routes_with_session(code_from : int, code_to : int, date : datetime, place_type : str = None, with_seats : bool = True):
+def get_train_routes_with_session(
+    code_from: int,
+    code_to: int,
+    date: datetime,
+    place_type: str = None,
+    with_seats: bool = True,
+):
     """Получение маршрутов от города с кодом code_from в город с code_to."""
 
     base_url = "https://pass.rzd.ru/timetable/public/ru"
@@ -15,7 +21,6 @@ def get_train_routes_with_session(code_from : int, code_to : int, date : datetim
 
     file = open("resources/headers.json")
     headers = json.load(file)
-
 
     params = {
         "layer_id": 5827,
@@ -79,6 +84,7 @@ def get_train_routes_with_session(code_from : int, code_to : int, date : datetim
         )
         return None
 
+
 def get_parsed_data(result_data, place_type):
     try:
         routes = []
@@ -93,10 +99,13 @@ def get_parsed_data(result_data, place_type):
                 if place_type is not None:
                     best_price = None
                     if cars:
-                        prices = [c.get("tariff") for c in cars \
-                                    if (c.get("tariff") is not None) \
-                                          and (c.get("typeLoc") == place_type) \
-                                            and (c.get("disabledPerson", None) is None)]
+                        prices = [
+                            c.get("tariff")
+                            for c in cars
+                            if (c.get("tariff") is not None)
+                            and (c.get("typeLoc") == place_type)
+                            and (c.get("disabledPerson", None) is None)
+                        ]
                         if prices:
                             best_price = min(prices)
                             freeseats = cars[prices.index(best_price)].get("freeSeats")
@@ -109,21 +118,18 @@ def get_parsed_data(result_data, place_type):
                     if cars:
                         for c in cars:
                             price = c.get("tariff")
-                            if (price is not None) \
-                                    and (c.get("disabledPerson", None) is None):
+                            if (price is not None) and (
+                                c.get("disabledPerson", None) is None
+                            ):
 
-
-                                if ((best_price is None) or (best_price > price)):
+                                if (best_price is None) or (best_price > price):
                                     best_price = price
                                     place_type = c.get("type")
                                     freeseats = c.get("freeSeats")
 
-
                     if best_price is None:
                         best_price = "нет данных"
                         continue
-
-
 
                 route_id = train.get("number")
 
@@ -139,7 +145,6 @@ def get_parsed_data(result_data, place_type):
                 station_code_from = train.get("code0")
                 station_code_to = train.get("code1")
 
-
                 format = "%d.%m.%Y %H:%M"
 
                 date_time0 = f'{train.get("date0")} {train.get("time0")}'
@@ -147,7 +152,6 @@ def get_parsed_data(result_data, place_type):
 
                 date_time1 = f'{train.get("date1")} {train.get("time1")}'
                 date_time1 = datetime.strptime(date_time1, format)
-
 
                 routes.append(
                     {
@@ -172,6 +176,7 @@ def get_parsed_data(result_data, place_type):
     except Exception as e:
         logging.error(f"Ошибка при обработке данных маршрута: {e}")
         return None
+
 
 def get_station_code(station_name):
     """
