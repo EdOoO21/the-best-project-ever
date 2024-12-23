@@ -51,16 +51,20 @@ def get_city_code(city_name) -> int:
     
     raise ValueError("Город/станция не найдены")
 
-def delete_unvalid_subscritions_and_routes():
+def delete_unvalid_routes():
     """удаляет все подписки поезда которых уже ушли (т.е. дата маршрута прошла)"""
-    subscriptions = session.query(Subscription.route.from_date).filter(Subscription.route.from_date >= text("TIMEZONE('utc', now())")).all()
-    if subscriptions:
+    routes = session.query(Route).filter(Route.from_date >= text("TIMEZONE('utc', now())")).all()
+    if routes:
         # удаляем все подписки с прошедшедшими датами, а также все маршруты из этих подписок
-        session.delete(subscriptions)
-
-        session.query(Route).filter(Route.route.from_date >= text("TIMEZONE('utc', now())")).delete(
+        session.query(Subscription).filter(Subscription.route.route_id in [route.route_id for route in routes]).delete(
             synchronize_session=False
         )
+        # удаляем все билеты с прошедшедшими датами, а также все маршруты из этих подписок
+        session.query(Ticket).filter(Ticket.route.route.route_id in [route.route_id for route in routes]).delete(
+            synchronize_session=False
+        )
+        # наконец все маршруты удаляем
+        session.delete(routes)
         session.commit()
     return []
 
