@@ -26,6 +26,13 @@ def load_cities_from_json(file_path: str):
 
         session.commit()
 
+def check_user_is_banned(user_id: int):
+    """проверяем статус пользователя"""
+    user = session.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise Exception("Пользователь не найден")
+    return user.status == UserStatus.banned
+
 def get_city_code(city_name):
     """получает код города по названию"""
     city_name = city_name.lower()
@@ -199,7 +206,7 @@ def delete_subscription(user_id: int, route_id: int):
         session.commit()
 
 
-def add_ticket(route_id: int, class_name: TicketType, best_price: int):
+def add_ticket(route_id: int, class_name: str, best_price: int):
     """добавляем новую информацию по самому выгодному билету"""
     new_ticket = Ticket(route_id=route_id, class_name=class_name, best_price=best_price)
     # время добавления записи проставится автоматически см. models.Ticket

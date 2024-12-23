@@ -26,7 +26,7 @@ q.add_subscription(user_id=19999, route_id=added_route_id)
 print(*q.get_routes_subscribed())  # >> 1  как раз маршрут добавленный с номером 1
 
 
-q.add_ticket(added_route_id, q.TicketType.cupe, 888131377)
+q.add_ticket(added_route_id, "купе", 888131377)
 
 print("---", *[ticket for ticket in q.session.query(q.Ticket).distinct().all()])
 
