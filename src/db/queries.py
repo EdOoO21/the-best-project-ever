@@ -125,8 +125,8 @@ def add_station(city_id: int, station_id: int, station_name: str):
 def add_route(
     from_station_id: int,
     to_station_id: int,
-    from_date: datetime.datetime,
-    to_date: datetime.datetime,
+    from_date: datetime,
+    to_date: datetime,
     train_no: str,
     class_name: str,
 ) -> int:
