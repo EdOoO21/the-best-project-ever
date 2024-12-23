@@ -13,6 +13,21 @@ class TestAddFunctions(unittest.TestCase):
         self.assertIsNotNone(city)
         self.assertEqual(city.city_name, "пупупу")
 
+    def test_add_station_with_existed_city(self):
+        add_station(station_name="у черта на куличиках", station_id=3933, city_id=2060533)
+        station = session.query(Station).filter_by(station_id=3933).first()
+        self.assertIsNotNone(station)
+        self.assertEqual(station.station_name, "у черта на куличиках")
+        self.assertEqual(station.city_id, 2060533)
+    
+    # def test_add_station_with_unexisted_city(self):
+    #     add_station(station_name="у черта на куличиках", station_id=3933, city_id=101)
+    #     station = session.query(Station).filter_by(station_id=3933).first()
+
+    #     self.assertIsNotNone(station)
+    #     self.assertEqual(station.station_name, "у черта на куличиках")
+    #     self.assertEqual(station.city_id, 2060533)
+
     def test_add_route(self):
         add_station(station_name="пупупу", station_id=58858, city_id=2010359)
         add_station(station_name="у черта на куличиках", station_id=3933, city_id=2060533)
@@ -29,3 +44,8 @@ class TestAddFunctions(unittest.TestCase):
         route = session.query(Route).filter_by(route_id=route_id).first()
         self.assertIsNotNone(route)
         self.assertEqual(route.train_no, "ЪЫЪ")
+        self.assertEqual(route.class_name.value, "купе")
+        self.assertEqual(route.from_station_id, 58858)
+        self.assertEqual(route.from_date, datetime(2024, 6, 19, 9, 14, 10))
+        self.assertEqual(route.to_station_id, 3933)
+        self.assertEqual(route.to_date, datetime(2024, 7, 23, 7, 34, 11))
