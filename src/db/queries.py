@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from src.db.database import engine, session
 from src.db.models import (Base, City, Route, Station, Subscription, Ticket,
-                           TicketType, User, UserStatus)
+                           RouteType, User, UserStatus)
 
 
 def create_tables():
@@ -69,7 +69,8 @@ def get_route_with_tickets_by_id(route_id: int) -> dict:
         "from_date": None,
         "to_date": None,
         "train_no": None,
-        "tickets": {},
+        "class_name": None,
+        "best_price": None
     }
 
     route = session.query(Route).filter_by(route_id=route_id).first()
@@ -83,26 +84,12 @@ def get_route_with_tickets_by_id(route_id: int) -> dict:
         result["to_date"] = route.to_date
         result["train_no"] = route.train_no
 
-        # получили по самому последнему по времени обновления билету каждого класса с таким маршрутом
-        subquery = (
-            session.query(
-                Ticket.class_name, func.max(Ticket.update_time).label("max_update_time")
-            )
-            .filter(Ticket.route_id == route_id)
-            .group_by(Ticket.class_name)
-        ).subquery()
+        # получили самый последний по времени обновления билет с таким маршрутом
+        last_ticket = session.query(Ticket).filter_by(route_id=route_id).order_by(Ticket.update_time.desc()).first()
 
-        tickets = (
-            session.query(Ticket).join(
-                subquery,
-                (Ticket.class_name == subquery.c.class_name)
-                & (Ticket.update_time == subquery.c.max_update_time),
-            )
-        ).all()
-
-        if tickets:
-            for ticket in tickets:
-                result["tickets"][ticket.class_name.value] = ticket.best_price
+        if last_ticket:
+            result["class_name"] = last_ticket.route.class_name.value
+            result["best_price"] = last_ticket.best_price
 
     return result
 
@@ -129,14 +116,27 @@ def add_route(
     from_date: str,
     to_date: str,
     train_no: str,
+    class_name: str,
 ) -> int:
     """добавляем новый маршрут"""
+    if class_name == "плацкарт":
+        class_name = RouteType.plackart
+    elif class_name == "купе":
+        class_name = RouteType.cupe
+    elif class_name == "сидячий":
+        class_name = RouteType.seated
+    elif class_name == "св":
+        class_name = RouteType.sv
+    else:
+        raise Exception("Неправильно указан класс поезда (не \"купе\", \"плацкарт\", \"св\" или \"сидячий\")")
+
     new_route = Route(
         from_station_id=from_station_id,
         to_station_id=to_station_id,
         from_date=from_date,
         to_date=to_date,
         train_no=train_no,
+        class_name=class_name
     )
     session.add(new_route)
     session.commit()
@@ -207,9 +207,9 @@ def delete_subscription(user_id: int, route_id: int):
         session.commit()
 
 
-def add_ticket(route_id: int, class_name: str, best_price: int):
+def add_ticket(route_id: int, best_price: int):
     """добавляем новую информацию по самому выгодному билету"""
-    new_ticket = Ticket(route_id=route_id, class_name=class_name, best_price=best_price)
+    new_ticket = Ticket(route_id=route_id, best_price=best_price)
     # время добавления записи проставится автоматически см. models.Ticket
     session.add(new_ticket)
     session.commit()

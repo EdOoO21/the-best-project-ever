@@ -18,6 +18,7 @@ added_route_id = q.add_route(
     to_station_id=3933,
     to_date=datetime(2024, 7, 23, 7, 34, 11),
     train_no="ЪЫЪ",
+    class_name="купе",
 )
 
 q.add_user(user_id=19999)
@@ -26,7 +27,7 @@ q.add_subscription(user_id=19999, route_id=added_route_id)
 print(*q.get_routes_subscribed())  # >> 1  как раз маршрут добавленный с номером 1
 
 
-q.add_ticket(added_route_id, "купе", 888131377)
+q.add_ticket(added_route_id, 888131377)
 
 print("---", *[ticket for ticket in q.session.query(q.Ticket).distinct().all()])
 
