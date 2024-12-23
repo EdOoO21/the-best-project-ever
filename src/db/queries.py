@@ -51,6 +51,12 @@ def get_city_code(city_name) -> int:
     
     raise ValueError("Город/станция не найдены")
 
+
+def get_city(city_id: int):
+    """получаем город по его айди"""
+    return session.query(City).filter(City.city_id == city_id).first()
+
+
 def delete_unvalid_routes():
     """удаляет все подписки поезда которых уже ушли (т.е. дата маршрута прошла)"""
     routes = session.query(Route).filter(Route.from_date >= text("TIMEZONE('utc', now())")).all()
