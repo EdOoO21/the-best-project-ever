@@ -161,9 +161,3 @@ class TestDatabaseQueries(unittest.TestCase):
         mock_session.query.return_value.filter_by.return_value.first.assert_called_once()
         mock_session.delete.assert_called_once()
         mock_session.commit.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-# python3 -m unittest ./src/tests/queries_test.py
