@@ -29,7 +29,7 @@ def load_cities_from_json(file_path: str):
 def check_user_is_banned(user_id: int) -> bool | None:
     """проверяем статус пользователя"""
     user = session.query(User).filter(User.user_id == user_id).first()
-    if not user:
+    if user:
         return user.status == UserStatus.banned
     raise Exception(f"Пользователь c ID {user_id} не найден")
 
