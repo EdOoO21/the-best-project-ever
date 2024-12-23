@@ -7,7 +7,7 @@ from datetime import datetime
 import requests
 
 
-def get_train_routes_with_session(code_from, code_to, date, place_type=None,with_seats=True):
+def get_train_routes_with_session(code_from : int, code_to : int, date : datetime, place_type : str = None, with_seats : bool = True):
     """Получение маршрутов от города с кодом code_from в город с code_to."""
 
     base_url = "https://pass.rzd.ru/timetable/public/ru"
@@ -16,6 +16,7 @@ def get_train_routes_with_session(code_from, code_to, date, place_type=None,with
     file = open("resources/headers.json")
     headers = json.load(file)
 
+
     params = {
         "layer_id": 5827,
         "dir": 0,
@@ -23,7 +24,7 @@ def get_train_routes_with_session(code_from, code_to, date, place_type=None,with
         "checkSeats": 1 if with_seats else 0,
         "code0": code_from,
         "code1": code_to,
-        "dt0": date,
+        "dt0": date.strftime("%d.%m.%Y"),
     }
 
     response = session.get(base_url, params=params, headers=headers)
@@ -132,7 +133,6 @@ def get_parsed_data(result_data, place_type):
                 station_code_from = train.get("code0")
                 station_code_to = train.get("code1")
 
-                route_date = train.get("date0")
 
                 format = "%d.%m.%Y %H:%M"
 

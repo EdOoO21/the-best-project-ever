@@ -42,7 +42,7 @@ async def test_cb_set_alert():
     """
     with patch.object(bot, 'send_message', new=AsyncMock()) as mock_send, \
          patch.object(bot, 'answer_callback_query', new=AsyncMock()) as mock_cb_answer:
-        
+
         cb_query = CallbackQuery(
             id="xyz",
             from_user=types.User(id=12345, is_bot=False, first_name="Tester"),
@@ -60,7 +60,7 @@ async def test_cb_set_alert():
         dp.include_router(router)
         await dp.feed_update(bot, update)
         mock_cb_answer.assert_called_once()
-        mock_send.assert_awaited()  
+        mock_send.assert_awaited()
         args, kwargs = mock_send.call_args
         assert "Введите город отбытия" in args[1]
 

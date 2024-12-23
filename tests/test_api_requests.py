@@ -7,11 +7,11 @@ def test_get_train_routes_with_seats():
     """Тест на получение маршрутов (места есть)"""
     code_from = "2000000"
     code_to = "2004000"
-    date = (datetime.now() + timedelta(days=10)).strftime("%d.%m.%Y")
+    date = datetime.now() + timedelta(days=10)
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=True)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (
+    assert isinstance(result, list) or (
         result == "NO TICKETS"
     ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
 
@@ -20,12 +20,12 @@ def test_get_train_routes_without_seats():
     """Тест на получение маршрутов (без мест)"""
     code_from = "2000000"
     code_to = "2004000"
-    date = (datetime.now() + timedelta(days=10)).strftime("%d.%m.%Y")
+    date = datetime.now() + timedelta(days=10)
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=False)
     assert result is not None, "Результат должен быть не None"
     assert (
-        isinstance(result, dict) or result == "NO TICKETS"
+        isinstance(result, list) or result == "NO TICKETS"
     ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
 
 
@@ -35,11 +35,11 @@ def test_get_train_routes_with_seats_get_codes():
     assert code_from == "2000000"
     code_to = get_station_code("владивосток")
     assert code_to == "2034130"
-    date = (datetime.now() + timedelta(days=10)).strftime("%d.%m.%Y")
+    date = datetime.now() + timedelta(days=10)
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=True)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (
+    assert isinstance(result, list) or (
         result == "NO TICKETS"
     ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
 
@@ -50,10 +50,10 @@ def test_get_train_routes_without_seats_get_codes():
     assert code_from == "2028022"
     code_to = get_station_code("санкт-петербург")
     assert code_to == "2004000"
-    date = (datetime.now() + timedelta(days=10)).strftime("%d.%m.%Y")
+    date = datetime.now() + timedelta(days=10)
 
     result = get_train_routes_with_session(code_from, code_to, date, with_seats=False)
     assert result is not None, "Результат должен быть не None, это значит была ошибка"
-    assert isinstance(result, dict) or (
+    assert isinstance(result, list) or (
         result == "NO TICKETS"
     ), "Ожидается, что результат будет словарем или строкой 'NO TICKETS'"
