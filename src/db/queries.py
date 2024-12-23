@@ -26,14 +26,14 @@ def load_cities_from_json(file_path: str):
 
         session.commit()
 
-def check_user_is_banned(user_id: int):
+def check_user_is_banned(user_id: int) -> bool | None:
     """проверяем статус пользователя"""
     user = session.query(User).filter(User.user_id == user_id).first()
     if not user:
-        raise Exception("Пользователь не найден")
-    return user.status == UserStatus.banned
+        return user.status == UserStatus.banned
+    raise Exception(f"Пользователь c ID {user_id} не найден")
 
-def get_city_code(city_name):
+def get_city_code(city_name) -> int:
     """получает код города по названию"""
     city_name = city_name.lower()
 
@@ -52,7 +52,7 @@ def get_city_code(city_name):
     raise ValueError("Город/станция не найдены")
 
 
-def get_routes_subscribed():
+def get_routes_subscribed() -> list:
     """получаем список уникальных айди маршрутов, которые находятся в таблице подписок"""
     routes = session.query(Subscription.route_id).distinct().all()
     if routes:
@@ -129,7 +129,7 @@ def add_route(
     from_date: str,
     to_date: str,
     train_no: str,
-):
+) -> int:
     """добавляем новый маршрут"""
     new_route = Route(
         from_station_id=from_station_id,
@@ -173,6 +173,7 @@ def update_user(user_id: int, new_status: str):
                 synchronize_session=False
             )
         session.commit()
+    raise Exception(f"Пользователь c ID {user_id} не найден")
 
 
 def delete_user(user_id: int):
