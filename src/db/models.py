@@ -45,6 +45,14 @@ class Station(Base):
     )
 
 
+class RouteType(enum.Enum):
+    """я хз как это на английский переводится вот честное слово)))"""
+    plackart = "плацкарт"
+    cupe = "купе"
+    seated = "сидячий"
+    sv = "св"
+
+
 class Route(Base):
     """модель таблички маршрутов поездов"""
 
@@ -59,6 +67,7 @@ class Route(Base):
     to_station_id = Column(Integer, ForeignKey("t_station.station_id"), nullable=False)
     to_date = Column(DateTime, nullable=False)
     train_no = Column(String(25))
+    class_name = Column(Enum(RouteType), nullable=False)
 
     # связь с станциями - станция отправления
     from_station = relationship(
@@ -114,14 +123,10 @@ class Subscription(Base):
     user_id = Column(Integer, ForeignKey("t_user.user_id"), primary_key=True)
     route_id = Column(Integer, ForeignKey("t_route.route_id"), primary_key=True)
 
-
-class TicketType(enum.Enum):
-    """я хз как это на английский переводится вот честное слово)))"""
-
-    plackart = "плацкарт"
-    cupe = "купе"
-    seated = "сидячий"
-    sv = "св"
+    # связь с юзерами - юзер, который следит за этим маршрутом
+    user = relationship("User", back_populates="subscriptions")
+    # связь с маршрутами - маршут, за которым следит юзер
+    route = relationship("Route", back_populates="users")
 
 
 class Ticket(Base):
@@ -132,7 +137,6 @@ class Ticket(Base):
 
     ticket_id = Column(Integer, primary_key=True)
     route_id = Column(Integer, ForeignKey("t_route.route_id"), nullable=False)
-    class_name = Column(Enum(TicketType), nullable=False)
     best_price = Column(
         Integer,
         nullable=False,
@@ -147,7 +151,7 @@ class Ticket(Base):
     )
 
     def __str__(self):
-        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
+        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.route.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
 
     def __repr__(self):
-        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
+        return f"--------- ticket_id {self.ticket_id}, for route_id {self.route_id}, {self.route.class_name.value}, {self.best_price} rub, updated: {self.update_time} \n"
