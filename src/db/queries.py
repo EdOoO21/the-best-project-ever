@@ -132,7 +132,7 @@ def get_route_with_tickets_by_id(route_id: int) -> dict:
 
 def add_city(city_name: str, city_id: int):
     """загружаем город"""
-    if not session.query(City).filter_by(city_id=city_id).first():
+    if session.query(City).filter_by(city_id=city_id).first():
         return
     new_city = City(city_id=city_id, city_name=city_name)
     session.add(new_city)
@@ -140,7 +140,7 @@ def add_city(city_name: str, city_id: int):
 
 def add_station(city_id: int, station_id: int, station_name: str):
     """загружаем станцию"""
-    if not session.query(Station).filter_by(station_id=station_id).first():
+    if session.query(Station).filter_by(station_id=station_id).first():
         return
     new_station = Station(
         city_id=city_id, station_name=station_name, station_id=station_id
@@ -193,7 +193,7 @@ def delete_route(route_id: int):
 
 def add_user(user_id: int, status=UserStatus.chill):
     """добавляем пользователя"""
-    if not session.query(User).filter_by(user_id=user_id).first():
+    if session.query(User).filter_by(user_id=user_id).first():
         return
     new_user = User(user_id=user_id, status=status)
     session.add(new_user)
@@ -225,7 +225,7 @@ def delete_user(user_id: int):
 
 def add_subscription(user_id: int, route_id: int):
     """добавляем пользователю новую подписку"""
-    if not session.query(Subscription).filter_by(user_id=user_id, route_id=route_id).first():
+    if session.query(Subscription).filter_by(user_id=user_id, route_id=route_id).first():
         return
     new_subscription = Subscription(user_id=user_id, route_id=route_id)
     session.add(new_subscription)
