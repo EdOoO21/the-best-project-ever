@@ -127,6 +127,10 @@ def get_parsed_data(result_data, place_type):
 
                 station_from = train.get("station0")
                 station_to = train.get("station1")
+                city_from = tp[0].get("from")
+                city_from_code = tp[0].get("fromCode")
+                city_where = tp[0].get("where")
+                city_where_code = tp[0].get("whereCode")
 
                 route_from = train.get("route0")
                 route_to = train.get("route1")
@@ -155,6 +159,10 @@ def get_parsed_data(result_data, place_type):
                         "datetime1": date_time1,
                         "best_price": best_price,
                         "class": place_type,
+                        "from": city_from,
+                        "fromCode": city_from_code,
+                        "where": city_where,
+                        "whereCode": city_where_code
                     }
                 )
         return routes
